@@ -1,41 +1,48 @@
 <?php
 session_start();
-$mysqli = new mysqli("localhost", "root", "", "telemedicina");
-if ($mysqli->connect_errno) die("Errore DB: " . $mysqli->connect_error);
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nome = $mysqli->real_escape_string($_POST["nome"]);
-    $email = $mysqli->real_escape_string($_POST["email"]);
-    $password = password_hash($_POST["password"], PASSWORD_DEFAULT);
-    $tipo = $_POST["tipo_utente"];
-    $mysqli->query("INSERT INTO Utente (nome, email, password, tipo_utente) VALUES ('$nome', '$email', '$password', '$tipo')");
-    $id = $mysqli->insert_id;
-    if ($tipo == "Medico") {
-        $spec = $mysqli->real_escape_string($_POST["specializzazione"]);
-        $mysqli->query("INSERT INTO Medico (id_medico, specializzazione) VALUES ($id, '$spec')");
-    } else {
-        $data = $_POST["data_nascita"];
-        $mysqli->query("INSERT INTO Paziente (id_paziente, data_nascita) VALUES ($id, '$data')");
-    }
-    echo "<p>Registrazione completata. <a href='login.php'>Accedi</a></p>";
+require 'config.php';
+
+$nome = $_POST['nome'];
+$email = $_POST['email'];
+$password = $_POST['password'];
+$tipo_utente = $_POST['tipo_utente']; // 'Medico' o 'Paziente'
+
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+// Verifica se email già esiste
+$stmt = $conn->prepare("SELECT * FROM utente WHERE email = ?");
+$stmt->bind_param("s", $email);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows > 0) {
+    echo "Email già registrata.";
+    exit;
 }
+
+// Inserisci nella tabella utente
+$stmt = $conn->prepare("INSERT INTO utente (nome, email, password, tipo_utente) VALUES (?, ?, ?, ?)");
+$stmt->bind_param("ssss", $nome, $email, $hashed_password, $tipo_utente);
+$stmt->execute();
+
+$id_utente = $conn->insert_id;
+
+// Inserisci nella tabella medico o paziente
+if ($tipo_utente === "Medico") {
+    $specializzazione = $_POST['specializzazione'] ?? 'Medicina generale';
+    $stmt = $conn->prepare("INSERT INTO medico (id_medico, Specializzazione) VALUES (?, ?)");
+    $stmt->bind_param("is", $id_utente, $specializzazione);
+} else {
+    $data_nascita = $_POST['data_nascita'];
+    $sesso = $_POST['sesso'];
+    $stmt = $conn->prepare("INSERT INTO paziente (id_paziente, data_nascita, Sesso) VALUES (?, ?, ?)");
+    $stmt->bind_param("iss", $id_utente, $data_nascita, $sesso);
+}
+$stmt->execute();
+
+echo "Registrazione completata.";
 ?>
-<form method="POST">
-    Nome: <input type="text" name="nome" required><br>
-    Email: <input type="email" name="email" required><br>
-    Password: <input type="password" name="password" required><br>
-    Tipo: 
-    <select name="tipo_utente" onchange="toggle(this.value)">
-        <option value="">--</option>
-        <option value="Medico">Medico</option>
-        <option value="Paziente">Paziente</option>
-    </select><br>
-    <div id="medico" style="display:none">Specializzazione: <input name="specializzazione"><br></div>
-    <div id="paziente" style="display:none">Data di nascita: <input type="date" name="data_nascita"><br></div>
-    <input type="submit" value="Registrati">
-</form>
-<script>
-function toggle(tipo) {
-    document.getElementById("medico").style.display = tipo == "Medico" ? "block" : "none";
-    document.getElementById("paziente").style.display = tipo == "Paziente" ? "block" : "none";
-}
-</script>
+
+<a href="index.php" style="display:inline-block; margin: 20px 0; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">
+🏠 Torna alla Home
+</a>

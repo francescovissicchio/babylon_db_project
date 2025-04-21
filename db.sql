@@ -1,101 +1,85 @@
+-- progetto_babylon_vissicchio.chatbot definition
 
--- DATABASE: telemedicina
+CREATE TABLE `chatbot` (
+  `id_chatbot` int(11) NOT NULL AUTO_INCREMENT,
+  `nome_bot` varchar(100) DEFAULT NULL,
+  `sintomi_riportati` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_chatbot`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-DROP DATABASE IF EXISTS telemedicina;
-CREATE DATABASE telemedicina;
-USE telemedicina;
 
-SET FOREIGN_KEY_CHECKS=0;
+-- progetto_babylon_vissicchio.utente definition
 
-CREATE TABLE Utente (
-    id_utente INT PRIMARY KEY AUTO_INCREMENT,
-    nome VARCHAR(100),
-    email VARCHAR(100) UNIQUE,
-    password VARCHAR(255),
-    tipo_utente VARCHAR(20) CHECK (tipo_utente IN ('Medico', 'Paziente'))
-);
+CREATE TABLE `utente` (
+  `id_utente` int(11) NOT NULL AUTO_INCREMENT,
+  `nome` varchar(100) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `tipo_utente` enum('Medico','Paziente') NOT NULL,
+  PRIMARY KEY (`id_utente`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE Medico (
-    id_medico INT PRIMARY KEY,
-    specializzazione VARCHAR(100),
-    FOREIGN KEY (id_medico) REFERENCES Utente(id_utente)
-);
 
-CREATE TABLE Paziente (
-    id_paziente INT PRIMARY KEY,
-    data_nascita DATE,
-    FOREIGN KEY (id_paziente) REFERENCES Utente(id_utente)
-);
+-- progetto_babylon_vissicchio.medico definition
 
-CREATE TABLE Chat (
-    id_chat INT PRIMARY KEY AUTO_INCREMENT,
-    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE `medico` (
+  `id_medico` int(11) NOT NULL,
+  `Specializzazione` varchar(100) NOT NULL DEFAULT 'Medicina generale',
+  `Rating` double NOT NULL DEFAULT 0,
+  `Disponibilita` BOOLEAN NOT NULL DEFAULT TRUE,
+  PRIMARY KEY (`id_medico`),
+  CONSTRAINT `medico_ibfk_1` FOREIGN KEY (`id_medico`) REFERENCES `utente` (`id_utente`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE Chatbot (
-    id_chatbot INT PRIMARY KEY AUTO_INCREMENT,
-    nome_bot VARCHAR(100)
-);
 
-CREATE TABLE Visita (
-    id_visita INT PRIMARY KEY AUTO_INCREMENT,
-    data_visita TIMESTAMP,
-    descrizione TEXT
-);
+-- progetto_babylon_vissicchio.paziente definition
 
-CREATE TABLE Partecipa (
-    id_medico INT,
-    id_chat INT,
-    PRIMARY KEY (id_medico, id_chat),
-    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico),
-    FOREIGN KEY (id_chat) REFERENCES Chat(id_chat)
-);
+CREATE TABLE `paziente` (
+  `id_paziente` int(11) NOT NULL,
+  `data_nascita` date DEFAULT NULL,
+  `Sesso` varchar(100) DEFAULT NULL,
+  PRIMARY KEY (`id_paziente`),
+  CONSTRAINT `paziente_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `utente` (`id_utente`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE Avvia (
-    id_paziente INT,
-    id_chat INT,
-    PRIMARY KEY (id_paziente, id_chat),
-    FOREIGN KEY (id_paziente) REFERENCES Paziente(id_paziente),
-    FOREIGN KEY (id_chat) REFERENCES Chat(id_chat)
-);
 
-CREATE TABLE Sceglie (
-    id_chatbot INT PRIMARY KEY,
-    id_medico INT,
-    FOREIGN KEY (id_chatbot) REFERENCES Chatbot(id_chatbot),
-    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico)
-);
+-- progetto_babylon_vissicchio.visita definition
 
-CREATE TABLE Presiede (
-    id_visita INT PRIMARY KEY,
-    id_medico INT,
-    FOREIGN KEY (id_visita) REFERENCES Visita(id_visita),
-    FOREIGN KEY (id_medico) REFERENCES Medico(id_medico)
-);
+CREATE TABLE `visita` (
+  `id_visita` INT(11) NOT NULL AUTO_INCREMENT,
+  `id_paziente` INT(11) NOT NULL,
+  `id_medico` INT(11) NOT NULL,
+  `data_visita` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `esito_visita` TEXT DEFAULT NULL,
+  PRIMARY KEY (`id_visita`),
+  UNIQUE KEY `unico_paziente_visita` (`id_paziente`),
+  KEY `id_medico` (`id_medico`),
+  CONSTRAINT `visita_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `paziente` (`id_paziente`),
+  CONSTRAINT `visita_ibfk_2` FOREIGN KEY (`id_medico`) REFERENCES `medico` (`id_medico`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-CREATE TABLE Interagisce (
-    id_paziente INT,
-    id_chatbot INT,
-    PRIMARY KEY (id_paziente, id_chatbot),
-    FOREIGN KEY (id_paziente) REFERENCES Paziente(id_paziente),
-    FOREIGN KEY (id_chatbot) REFERENCES Chatbot(id_chatbot)
-);
 
-CREATE TABLE Prenota (
-    id_visita INT PRIMARY KEY,
-    id_paziente INT,
-    FOREIGN KEY (id_visita) REFERENCES Visita(id_visita),
-    FOREIGN KEY (id_paziente) REFERENCES Paziente(id_paziente)
-);
+-- progetto_babylon_vissicchio.sceglie definition
 
-CREATE TABLE Messaggio (
-    id_messaggio INT PRIMARY KEY AUTO_INCREMENT,
-    id_chat INT,
-    id_mittente INT,
-    contenuto TEXT,
-    data_invio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_chat) REFERENCES Chat(id_chat),
-    FOREIGN KEY (id_mittente) REFERENCES Utente(id_utente)
-);
+CREATE TABLE `sceglie` (
+  `id_chatbot` int(11) NOT NULL,
+  `id_medico` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id_chatbot`),
+  KEY `id_medico` (`id_medico`),
+  CONSTRAINT `sceglie_ibfk_1` FOREIGN KEY (`id_chatbot`) REFERENCES `chatbot` (`id_chatbot`),
+  CONSTRAINT `sceglie_ibfk_2` FOREIGN KEY (`id_medico`) REFERENCES `medico` (`id_medico`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET FOREIGN_KEY_CHECKS=1;
+
+-- progetto_babylon_vissicchio.chat definition
+
+CREATE TABLE `chat` (
+  `id_paziente` int(11) NOT NULL,
+  `id_chatbot` int(11) NOT NULL,
+  `data_avvio` date NOT NULL,
+  PRIMARY KEY (`id_paziente`,`id_chatbot`),
+  KEY `id_chatbot` (`id_chatbot`),
+  CONSTRAINT `chat_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `paziente` (`id_paziente`),
+  CONSTRAINT `chat_ibfk_2` FOREIGN KEY (`id_chatbot`) REFERENCES `chatbot` (`id_chatbot`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
