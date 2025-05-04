@@ -1,25 +1,10 @@
 <?php
 require 'config.php';
 
-// 1. Pulisce le tabelle collegate (ordine importante per i vincoli FK)
-$conn->query("SET FOREIGN_KEY_CHECKS = 0");
-$conn->query("TRUNCATE TABLE visita");
-$conn->query("TRUNCATE TABLE chat");
-$conn->query("TRUNCATE TABLE sceglie");
-$conn->query("TRUNCATE TABLE paziente");
-$conn->query("TRUNCATE TABLE medico");
-$conn->query("TRUNCATE TABLE chatbot");
-$conn->query("TRUNCATE TABLE utente");
-$conn->query("SET FOREIGN_KEY_CHECKS = 1");
-
 function randomNome() {
     $nomi = ['Luca', 'Marco', 'Anna', 'Giulia', 'Francesco', 'Martina', 'Simone', 'Sara', 'Alessandro', 'Laura'];
     $cognomi = ['Rossi', 'Bianchi', 'Verdi', 'Russo', 'Esposito', 'Ferrari', 'Romano', 'Gallo', 'Costa', 'Greco'];
     return $nomi[array_rand($nomi)] . ' ' . $cognomi[array_rand($cognomi)];
-}
-
-function randomEmail($index) {
-    return "utente$index@babylon.com";
 }
 
 function randomPassword() {
@@ -45,6 +30,10 @@ function randomSpecializzazione() {
     return $specializzazioni[array_rand($specializzazioni)];
 }
 
+function probabilitaDisponibilita($percentuale = 70) {
+    return rand(1, 100) <= $percentuale;
+}
+
 function insertUtente($conn, $nome, $email, $password, $tipo) {
     $stmt = $conn->prepare("INSERT INTO utente (nome, email, password, tipo_utente) VALUES (?, ?, ?, ?)");
     $stmt->bind_param("ssss", $nome, $email, $password, $tipo);
@@ -52,14 +41,39 @@ function insertUtente($conn, $nome, $email, $password, $tipo) {
     return $conn->insert_id;
 }
 
-// Popola Medici
-for ($i = 1; $i <= 20; $i++) {
+// 1. Reset tabelle (tranne admin)
+$conn->query("SET FOREIGN_KEY_CHECKS = 0");
+$conn->query("TRUNCATE TABLE visita");
+$conn->query("TRUNCATE TABLE chat");
+$conn->query("TRUNCATE TABLE sceglie");
+$conn->query("TRUNCATE TABLE paziente");
+$conn->query("TRUNCATE TABLE medico");
+$conn->query("TRUNCATE TABLE chatbot");
+$conn->query("DELETE FROM utente WHERE email != 'admin@babylon.com'");
+$conn->query("SET FOREIGN_KEY_CHECKS = 1");
+
+// 2. Crea admin se non esiste
+$stmt = $conn->prepare("SELECT id_utente FROM utente WHERE email = ?");
+$admin_email = "admin@babylon.com";
+$stmt->bind_param("s", $admin_email);
+$stmt->execute();
+$result = $stmt->get_result();
+
+if ($result->num_rows === 0) {
+    $admin_nome = "Admin Babylon";
+    $admin_password = password_hash("admin123", PASSWORD_DEFAULT);
+    $admin_tipo = "Admin";
+    insertUtente($conn, $admin_nome, $admin_email, $admin_password, $admin_tipo);
+}
+
+// 3. Crea 100 Medici (almeno 70 disponibili)
+for ($i = 1; $i <= 100; $i++) {
     $nome = randomNome();
-    $email = randomEmail("medico$i");
+    $email = "medico$i@babylon.com";
     $password = randomPassword();
     $specializzazione = randomSpecializzazione();
-    $rating = round(rand(30, 50) / 10, 1); // 3.0 - 5.0
-    $disponibile = rand(0, 1);
+    $rating = round(rand(30, 50) / 10, 1);
+    $disponibile = probabilitaDisponibilita() ? 1 : 0;
 
     $id_utente = insertUtente($conn, $nome, $email, $password, 'Medico');
 
@@ -68,10 +82,10 @@ for ($i = 1; $i <= 20; $i++) {
     $stmt->execute();
 }
 
-// Popola Pazienti
-for ($i = 1; $i <= 50; $i++) {
+// 4. Crea 500 Pazienti
+for ($i = 1; $i <= 500; $i++) {
     $nome = randomNome();
-    $email = randomEmail("paziente$i");
+    $email = "paziente$i@babylon.com";
     $password = randomPassword();
     $sesso = randomSesso();
     $data_nascita = randomDataNascita();
@@ -83,12 +97,15 @@ for ($i = 1; $i <= 50; $i++) {
     $stmt->execute();
 }
 
-echo "<h3>Database resettato e popolato con successo!</h3>";
-echo "<p>Inseriti 20 medici e 50 pazienti nella base dati.</p>";
+echo "<h3>✅ Database resettato e popolato con successo!</h3>";
+echo "<p>👨‍⚕️ Medici inseriti: 100 (min. 70% disponibili)<br>🧑‍🤝‍🧑 Pazienti inseriti: 500<br>🔐 Admin mantenuto</p>";
 echo "<a href='login.php'>Vai al login</a>";
 ?>
 
 <a href="index.php" style="display:inline-block; margin: 20px 0; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">
 🏠 Torna alla Home
 </a>
+
+
+
 

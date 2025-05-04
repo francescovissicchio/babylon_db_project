@@ -61,117 +61,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
     $id_medico = $_POST['id_medico'];
     $id_chatbot = $_POST['id_chatbot'];
 
+    // Inserisce nella tabella "sceglie"
     $stmt = $conn->prepare("INSERT INTO sceglie (id_chatbot, id_medico) VALUES (?, ?)");
     $stmt->bind_param("ii", $id_chatbot, $id_medico);
     $stmt->execute();
 
-    $stmt = $conn->prepare("INSERT INTO visita (id_paziente, id_medico) VALUES (?, ?)");
-    $stmt->bind_param("ii", $id_paziente, $id_medico);
+    // Inserisce nella tabella "visita" (✅ fix: collega id_chatbot!)
+    $stmt = $conn->prepare("INSERT INTO visita (id_paziente, id_medico, id_chatbot) VALUES (?, ?, ?)");
+    $stmt->bind_param("iii", $id_paziente, $id_medico, $id_chatbot);
     $stmt->execute();
 
+    // Inserisce nella tabella "chat"
     $stmt = $conn->prepare("INSERT INTO chat (id_paziente, id_chatbot, data_avvio) VALUES (?, ?, CURDATE())");
     $stmt->bind_param("ii", $id_paziente, $id_chatbot);
     $stmt->execute();
 }
 ?>
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Chatbot Medico</title>
-    <style>
-        body {
-            font-family: Arial;
-            padding: 20px;
-        }
-        .bot-box {
-            background-color: #f0f8ff;
-            border-left: 5px solid #0077cc;
-            padding: 15px;
-            margin-bottom: 20px;
-        }
-        .progress {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            max-width: 600px;
-        }
-        .progress div {
-            flex: 1;
-            text-align: center;
-            padding: 8px;
-            border-bottom: 3px solid #ccc;
-        }
-        .progress .active {
-            border-color: #0077cc;
-            font-weight: bold;
-        }
-        img.bot-avatar {
-            width: 60px;
-            vertical-align: middle;
-            margin-right: 10px;
-        }
-    </style>
-</head>
-<body>
-
-<!-- Barra di avanzamento -->
-<div class="progress">
-    <div class="<?= $step === 1 ? 'active' : '' ?>">1. Inserisci Sintomi</div>
-    <div class="<?= $step === 2 ? 'active' : '' ?>">2. Scegli Medico</div>
-    <div class="<?= $step === 3 ? 'active' : '' ?>">3. Visita Creata</div>
-</div>
-
-<?php if ($step === 1): ?>
-    <div class="bot-box">
-        <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png" class="bot-avatar" alt="Bot">
-        <strong>Dr. Babylon:</strong> Ciao! Raccontami i tuoi sintomi e ti aiuterò a trovare lo specialista più adatto.
-    </div>
-
-    <form method="POST">
-        <label for="sintomi">Descrivi i tuoi sintomi:</label><br>
-        <textarea name="sintomi" rows="5" cols="60" required></textarea><br><br>
-        <button type="submit">Invia</button>
-    </form>
-
-<?php elseif ($step === 2): ?>
-    <div class="bot-box">
-        <strong>Dr. Babylon:</strong> In base ai sintomi che hai riportato, ecco i medici che possono aiutarti. Scegli quello che preferisci.
-    </div>
-
-    <?php if ($medici->num_rows > 0): ?>
-        <form method="POST">
-            <input type="hidden" name="id_chatbot" value="<?= $id_chatbot ?>">
-            <table border="1" cellpadding="5" cellspacing="0">
-                <tr>
-                    <th>Seleziona</th>
-                    <th>Nome</th>
-                    <th>Rating</th>
-                </tr>
-                <?php while ($row = $medici->fetch_assoc()): ?>
-                    <tr>
-                        <td><input type="radio" name="id_medico" value="<?= $row['id_utente'] ?>" required></td>
-                        <td><?= htmlspecialchars($row['nome']) ?></td>
-                        <td><?= $row['Rating'] ?></td>
-                    </tr>
-                <?php endwhile; ?>
-            </table><br>
-            <button type="submit">Conferma Medico</button>
-        </form>
-    <?php else: ?>
-        <p><strong>Dr. Babylon:</strong> Mi dispiace, al momento non ci sono medici disponibili per la specializzazione individuata.</p>
-    <?php endif; ?>
-
-<?php elseif ($step === 3): ?>
-    <div class="bot-box">
-        <strong>Dr. Babylon:</strong> Visita registrata con successo! Puoi trovare i dettagli nel tuo profilo.
-    </div>
-    <a href="profilo.php">Torna al tuo profilo</a>
-<?php endif; ?>
-
-</body>
-</html>
-
-<a href="index.php" style="display:inline-block; margin: 20px 0; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">
-🏠 Torna alla Home
-</a>
