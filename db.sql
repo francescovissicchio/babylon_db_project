@@ -9,18 +9,21 @@ CREATE TABLE `chatbot` (
   `id_chatbot` INT(11) NOT NULL AUTO_INCREMENT,
   `nome_bot` VARCHAR(100) DEFAULT NULL,
   `sintomi_riportati` TEXT DEFAULT NULL,
+  `specializzazione_dedotta` VARCHAR(100) DEFAULT NULL, -- ✅ NUOVA COLONNA
   PRIMARY KEY (`id_chatbot`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE `utente` (
   `id_utente` INT(11) NOT NULL AUTO_INCREMENT,
   `nome` VARCHAR(100) DEFAULT NULL,
+  `cognome` VARCHAR(100) DEFAULT NULL,
   `email` VARCHAR(100) DEFAULT NULL,
   `password` VARCHAR(255) DEFAULT NULL,
   `tipo_utente` ENUM('Medico','Paziente','Admin') NOT NULL,
   PRIMARY KEY (`id_utente`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 CREATE TABLE `medico` (
   `id_medico` INT(11) NOT NULL,
@@ -35,6 +38,8 @@ CREATE TABLE `paziente` (
   `id_paziente` INT(11) NOT NULL,
   `data_nascita` DATE DEFAULT NULL,
   `sesso` VARCHAR(100) DEFAULT NULL,
+  `statura_cm` INT DEFAULT NULL,             -- ✅ NUOVA COLONNA
+  `peso_kg` DECIMAL(5,2) DEFAULT NULL,       -- ✅ NUOVA COLONNA
   PRIMARY KEY (`id_paziente`),
   CONSTRAINT `paziente_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `utente` (`id_utente`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
