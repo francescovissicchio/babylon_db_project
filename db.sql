@@ -9,7 +9,7 @@ CREATE TABLE `chatbot` (
   `id_chatbot` INT(11) NOT NULL AUTO_INCREMENT,
   `nome_bot` VARCHAR(100) DEFAULT NULL,
   `sintomi_riportati` TEXT DEFAULT NULL,
-  `specializzazione_dedotta` VARCHAR(100) DEFAULT NULL, -- ✅ NUOVA COLONNA
+  `specializzazione_dedotta` VARCHAR(100) DEFAULT NULL,
   PRIMARY KEY (`id_chatbot`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -20,10 +20,10 @@ CREATE TABLE `utente` (
   `email` VARCHAR(100) DEFAULT NULL,
   `password` VARCHAR(255) DEFAULT NULL,
   `tipo_utente` ENUM('Medico','Paziente','Admin') NOT NULL,
+  `foto_profilo` VARCHAR(255) DEFAULT NULL, -- ✅ NUOVA COLONNA AGGIUNTA
   PRIMARY KEY (`id_utente`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 
 CREATE TABLE `medico` (
   `id_medico` INT(11) NOT NULL,
@@ -38,8 +38,8 @@ CREATE TABLE `paziente` (
   `id_paziente` INT(11) NOT NULL,
   `data_nascita` DATE DEFAULT NULL,
   `sesso` VARCHAR(100) DEFAULT NULL,
-  `statura_cm` INT DEFAULT NULL,             -- ✅ NUOVA COLONNA
-  `peso_kg` DECIMAL(5,2) DEFAULT NULL,       -- ✅ NUOVA COLONNA
+  `statura_cm` INT DEFAULT NULL,
+  `peso_kg` DECIMAL(5,2) DEFAULT NULL,
   PRIMARY KEY (`id_paziente`),
   CONSTRAINT `paziente_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `utente` (`id_utente`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -79,7 +79,7 @@ CREATE TABLE `chat` (
   CONSTRAINT `chat_ibfk_2` FOREIGN KEY (`id_chatbot`) REFERENCES `chatbot` (`id_chatbot`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- INSERIMENTO ADMIN (password = Fh8$kZr#2025admin!)
+-- INSERIMENTO ADMIN
 INSERT INTO `utente` (`nome`, `email`, `password`, `tipo_utente`)
 VALUES (
   'Admin Babylon',
@@ -87,6 +87,7 @@ VALUES (
   '$2y$10$X9pD7bGqT.lFQhN6UWY6LeKVmzNEwFhZJzjk8QkekDWCUHjByACz2',
   'Admin'
 );
+
 
 
 
