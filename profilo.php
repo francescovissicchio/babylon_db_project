@@ -11,7 +11,7 @@ $id_utente = $_SESSION['id_utente'];
 $tipo_utente = $_SESSION['tipo_utente'];
 
 if ($tipo_utente === 'Admin') {
-    echo "<h1>Amministratore</h1>";
+    echo "<h1>Admin</h1>";
     echo "<img src='uploads/babylon.jpg' alt='Admin Avatar' style='width:150px; height:150px; border-radius:50%; object-fit:cover;'><br>";
     echo "<p>Email: admin@babylon.it</p>";
 
@@ -78,7 +78,13 @@ if ($tipo_utente === 'Admin') {
     $cognome = htmlspecialchars($utente['cognome']);
     $email = htmlspecialchars($utente['email']);
 
-    echo "<h1>Dr. $nome $cognome</h1>";
+    if ($tipo_utente === 'Medico') {
+    echo "<h1>Doc $nome $cognome</h1>";
+    } else {
+    echo "<h1>Salve, $nome $cognome!</h1>";
+    }
+
+
     echo "<img src='$foto' style='width:150px; height:150px; border-radius:50%; object-fit:cover;'><br>";
     echo "<p>Email: $email</p>";
 
@@ -207,6 +213,96 @@ if ($tipo_utente === 'Admin') {
         } else {
             echo "<p>Nessuna visita programmata.</p>";
         }
+    }
+
+    elseif ($tipo_utente === 'Paziente') {
+        // Codice per paziente
+        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['aggiorna_dati'])) {
+            $statura_cm = (int)$_POST['statura_cm'];
+            $peso_kg = (float)$_POST['peso_kg'];
+
+            if ($statura_cm >= 50 && $statura_cm <= 250 && $peso_kg >= 10 && $peso_kg <= 300) {
+                $stmt = $conn->prepare("UPDATE paziente SET statura_cm = ?, peso_kg = ? WHERE id_paziente = ?");
+                $stmt->bind_param("idi", $statura_cm, $peso_kg, $id_utente);
+                $stmt->execute();
+                echo "<p style='color:green;'>✅ Dati aggiornati con successo.</p>";
+            } else {
+                echo "<p style='color:red;'>⚠️ Inserisci valori realistici per statura e peso.</p>";
+            }
+        }
+
+        $stmt = $conn->prepare("SELECT * FROM paziente WHERE id_paziente = ?");
+        $stmt->bind_param("i", $id_utente);
+        $stmt->execute();
+        $paziente = $stmt->get_result()->fetch_assoc();
+
+        if ($paziente) {
+            $data_nascita = $paziente['data_nascita'] ?? 'N/A';
+            $sesso = $paziente['sesso'] ?? 'N/A';
+            $statura = $paziente['statura_cm'] ?? null;
+            $peso = $paziente['peso_kg'] ?? null;
+
+            echo "<h2>Dati Paziente</h2>";
+            echo "<p>Data di nascita: " . htmlspecialchars($data_nascita) . "</p>";
+            echo "<p>Sesso: " . htmlspecialchars($sesso) . "</p>";
+
+            if ($statura && $peso) {
+                $bmi = $peso / pow($statura / 100, 2);
+                $bmi = round($bmi, 1);
+                if ($bmi < 18.5) $categoria = "Sottopeso";
+                elseif ($bmi < 25) $categoria = "Normopeso";
+                elseif ($bmi < 30) $categoria = "Sovrappeso";
+                else $categoria = "Obesità";
+
+                echo "<p>Statura: {$statura} cm</p>";
+                echo "<p>Peso: {$peso} kg</p>";
+                echo "<p><strong>BMI: {$bmi} ({$categoria})</strong></p>";
+            } else {
+                echo "<p>Statura e peso non ancora registrati.</p>";
+            }
+
+            echo "<h3>🔄 Aggiorna statura e peso</h3>
+                <form method='POST'>
+                    <label>Statura (cm):</label><br>
+                    <input type='number' name='statura_cm' value='" . htmlspecialchars($statura) . "' required><br>
+                    <label>Peso (kg):</label><br>
+                    <input type='number' name='peso_kg' value='" . htmlspecialchars($peso) . "' step='0.1' required><br><br>
+                    <button type='submit' name='aggiorna_dati'>📅 Salva</button>
+                </form>";
+        }
+
+        echo "<h2>📅 Storico Visite</h2>";
+
+        $query = "
+            SELECT v.data_visita, v.esito_visita, m.Specializzazione, u.nome AS nome_medico, u.cognome AS cognome_medico
+            FROM visita v
+            JOIN medico m ON v.id_medico = m.id_medico
+            JOIN utente u ON m.id_medico = u.id_utente
+            WHERE v.id_paziente = ?
+            ORDER BY v.data_visita DESC
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $id_utente);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+            echo "<table border='1'>
+                    <tr><th>Data Visita</th><th>Medico</th><th>Specializzazione</th><th>Esito</th></tr>";
+            while ($v = $result->fetch_assoc()) {
+                $nome_medico = htmlspecialchars($v['nome_medico']) . ' ' . htmlspecialchars($v['cognome_medico']);
+                echo "<tr>
+                        <td>" . htmlspecialchars($v['data_visita']) . "</td>
+                        <td>$nome_medico</td>
+                        <td>" . htmlspecialchars($v['Specializzazione']) . "</td>
+                        <td>" . htmlspecialchars($v['esito_visita']) . "</td>
+                      </tr>";
+            }
+            echo "</table>";
+        } else {
+            echo "<p>Nessuna visita registrata.</p>";
+        }
+    }
 
         echo "<h2>🤖 Richieste Babylon</h2>";
         $stmt = $conn->prepare("SELECT u.nome, u.cognome, u.email, c.id_chatbot, c.data_avvio
@@ -248,7 +344,6 @@ if ($tipo_utente === 'Admin') {
             echo "<p>Nessuna nuova richiesta tramite Babylon.</p>";
         }
     }
-}
 
 echo '<a href="index.php" style="display:inline-block; margin: 20px 0; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">🏠 Torna alla Home</a>';
 ?>

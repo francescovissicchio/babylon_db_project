@@ -3,48 +3,94 @@ session_start();
 ?>
 
 <!DOCTYPE html>
-<html>
+<html lang="it">
 <head>
-    <title>Progetto Babylon - Home</title>
+    <meta charset="UTF-8">
+    <title>Babylon - Home</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial;
-            background-color: #f2f2f2;
+            font-family: 'Poppins', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            background: url('uploads//ziggurat.jpg') no-repeat center center fixed;
+            background-size: cover;
+            animation: scrollBg 20s linear infinite alternate;
+        }
+
+        @keyframes scrollBg {
+            0% {
+                background-position: center top;
+            }
+            100% {
+                background-position: center bottom;
+            }
+        }
+
+        .box {
+            background: rgba(255, 255, 255, 0.85);
             padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            z-index: 1;
+            position: relative;
         }
+
         h1 {
-            color: #0077cc;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
         }
+
+        .welcome {
+            font-size: 1rem;
+            margin-bottom: 25px;
+        }
+
         ul {
             list-style-type: none;
-            padding-left: 0;
+            padding: 0;
         }
+
         li {
-            margin: 10px 0;
+            margin: 15px 0;
         }
+
         a {
             text-decoration: none;
-            color: #0077cc;
-            font-weight: bold;
+            color: #ffffff;
+            background-color: #4facfe;
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 8px;
+            transition: background-color 0.3s;
+            font-weight: 600;
         }
-        .box {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            width: 100%;
-            max-width: 400px;
-            margin: auto;
-            box-shadow: 0px 0px 10px #ccc;
+
+        a:hover {
+            background-color: #00c6ff;
         }
-        .welcome {
-            margin-bottom: 20px;
+
+        strong {
+            color: #00a2ff;
         }
     </style>
 </head>
 <body>
 
 <div class="box">
-    <h1>🩺 Progetto Babylon</h1>
+    <h1>🩺 Homepage Babylon</h1>
 
     <?php if (isset($_SESSION['nome'])): ?>
         <div class="welcome">
@@ -59,11 +105,10 @@ session_start();
             <li><a href="login.php">🔐 Login</a></li>
         <?php else: ?>
             <?php if ($_SESSION['tipo_utente'] === 'Admin'): ?>
-            <li><a href="profilo.php">🛠️ Area Admin</a></li>
-        <?php else: ?>
-            <li><a href="profilo.php">👤 Profilo personale</a></li>
-        <?php endif; ?>
-
+                <li><a href="profilo.php">🛠️ Area Admin</a></li>
+            <?php else: ?>
+                <li><a href="profilo.php">👤 Profilo personale</a></li>
+            <?php endif; ?>
 
             <?php if ($_SESSION['tipo_utente'] === 'Paziente'): ?>
                 <li><a href="chatbot_logic.php">🤖 Chatbot visita</a></li>
@@ -79,7 +124,6 @@ session_start();
                 <li><a href="azzera_database.php" onclick="return confirm('Sei sicuro di voler azzerare tutto il database?')">🗑️ Azzera Database</a></li>
             <?php endif; ?>
 
-
             <li><a href="logout.php">🚪 Logout</a></li>
         <?php endif; ?>
     </ul>
@@ -87,4 +131,6 @@ session_start();
 
 </body>
 </html>
+
+
 

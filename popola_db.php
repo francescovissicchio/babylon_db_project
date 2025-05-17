@@ -82,8 +82,8 @@ for ($i = 1; $i <= 100; $i++) {
     $stmt->execute();
 }
 
-// 4. Crea 500 Pazienti
-for ($i = 1; $i <= 500; $i++) {
+// 4. Crea 100 Pazienti
+for ($i = 1; $i <= 100; $i++) {
     $nome = randomNome();
     $email = "paziente$i@babylon.com";
     $password = randomPassword();
@@ -98,7 +98,7 @@ for ($i = 1; $i <= 500; $i++) {
 }
 
 echo "<h3>✅ Database resettato e popolato con successo!</h3>";
-echo "<p>👨‍⚕️ Medici inseriti: 100 (min. 70% disponibili)<br>🧑‍🤝‍🧑 Pazienti inseriti: 500<br>🔐 Admin mantenuto</p>";
+echo "<p>👨‍⚕️ Medici inseriti: 100<br>🧑‍🤝‍🧑 Pazienti inseriti: 100<br>🔐 Admin mantenuto</p>";
 echo "<a href='login.php'>Vai al login</a>";
 ?>
 
