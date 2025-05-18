@@ -20,7 +20,8 @@ CREATE TABLE `utente` (
   `email` VARCHAR(100) DEFAULT NULL,
   `password` VARCHAR(255) DEFAULT NULL,
   `tipo_utente` ENUM('Medico','Paziente','Admin') NOT NULL,
-  `foto_profilo` VARCHAR(255) DEFAULT NULL, -- ✅ NUOVA COLONNA AGGIUNTA
+  `foto_profilo` VARCHAR(255) DEFAULT NULL,
+  `data_registrazione` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id_utente`),
   UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

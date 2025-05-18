@@ -28,23 +28,23 @@ if ($tipo_utente === 'Admin') {
     </ul>";
 
     $v = $conn->query("SELECT COUNT(*) AS visite FROM visita")->fetch_assoc();
-    echo "<p>🗕️ Visite totali: <strong>{$v['visite']}</strong></p>";
+    echo "<p>🗕️ Visite totali (già svolte + in attesa di conferma): <strong>{$v['visite']}</strong></p>";
 
     $m = $conn->query("SELECT COUNT(*) AS disponibili FROM medico WHERE disponibilita = 1")->fetch_assoc();
     echo "<p>✅ Medici disponibili: <strong>{$m['disponibili']}</strong></p>";
 
     $c = $conn->query("SELECT COUNT(*) AS chatbot FROM chatbot")->fetch_assoc();
-    echo "<p>🤖 Chatbot creati: <strong>{$c['chatbot']}</strong></p>";
+    echo "<p>🤖 Numero interrogazioni Chatbot Babylon: <strong>{$c['chatbot']}</strong></p>";
 
-    echo "<hr><h2>🌟 Ultimi 5 utenti</h2>";
-    $res = $conn->query("SELECT nome, cognome, email, tipo_utente FROM utente ORDER BY id_utente DESC LIMIT 5");
+    echo "<hr><h2>🌟 Ultimi 10 utenti</h2>";
+    $res = $conn->query("SELECT nome, cognome, email, tipo_utente FROM utente ORDER BY id_utente DESC LIMIT 10");
     echo "<table border='1'><tr><th>Nome</th><th>Email</th><th>Tipo</th></tr>";
     while ($r = $res->fetch_assoc()) {
         echo "<tr><td>" . htmlspecialchars($r['nome']) . ' ' . htmlspecialchars($r['cognome']) . "</td><td>" . htmlspecialchars($r['email']) . "</td><td>" . htmlspecialchars($r['tipo_utente']) . "</td></tr>";
     }
     echo "</table>";
 
-    echo "<hr><h2>📋 Ultime 5 visite</h2>";
+    echo "<hr><h2>📋 Ultime 10 visite</h2>";
     $q = "
         SELECT v.data_visita, v.esito_visita,
                pz.nome AS nome_paziente, pz.cognome AS cognome_paziente,
@@ -53,7 +53,7 @@ if ($tipo_utente === 'Admin') {
         JOIN utente pz ON v.id_paziente = pz.id_utente
         JOIN utente m ON v.id_medico = m.id_utente
         ORDER BY v.data_visita DESC
-        LIMIT 5
+        LIMIT 10
     ";
     $res = $conn->query($q);
     echo "<table border='1'><tr><th>Data</th><th>Paziente</th><th>Medico</th><th>Esito</th></tr>";
@@ -77,6 +77,35 @@ if ($tipo_utente === 'Admin') {
     $nome = htmlspecialchars($utente['nome']);
     $cognome = htmlspecialchars($utente['cognome']);
     $email = htmlspecialchars($utente['email']);
+    $data_registrazione = htmlspecialchars($utente['data_registrazione']);
+
+    // Gestione upload immagine profilo
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_foto']) && isset($_FILES['foto'])) {
+    $file = $_FILES['foto'];
+    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if ($file['error'] === UPLOAD_ERR_OK && in_array($ext, $allowed)) {
+        $newFileName = 'user_' . $id_utente . '_' . time() . '.' . $ext;
+        $uploadPath = 'uploads/' . $newFileName;
+
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            // Salva il nuovo nome file nel DB
+            $stmt = $conn->prepare("UPDATE utente SET foto_profilo = ? WHERE id_utente = ?");
+            $stmt->bind_param("si", $newFileName, $id_utente);
+            $stmt->execute();
+
+            echo "<p style='color:green;'>✅ Immagine del profilo aggiornata con successo.</p>";
+            // Aggiorna $foto per mostrare subito l'immagine nuova
+            $foto = $uploadPath;
+        } else {
+            echo "<p style='color:red;'>❌ Errore nel salvataggio del file.</p>";
+        }
+    } else {
+        echo "<p style='color:red;'>⚠️ File non valido. Ammessi: jpg, jpeg, png, gif, webp.</p>";
+    }
+}
+
 
     if ($tipo_utente === 'Medico') {
     echo "<h1>Doc $nome $cognome</h1>";
@@ -85,8 +114,9 @@ if ($tipo_utente === 'Admin') {
     }
 
 
-    echo "<img src='$foto' style='width:150px; height:150px; border-radius:50%; object-fit:cover;'><br>";
+    echo "<img src='$foto?v=" . time() . "' style='width:150px; height:150px; border-radius:50%; object-fit:cover;'><br>";
     echo "<p>Email: $email</p>";
+    echo "<p>🗓️ Registrato il: $data_registrazione</p>";
 
     echo "<form method='POST' enctype='multipart/form-data'>
             <input type='file' name='foto' accept='image/*' required>
@@ -230,6 +260,7 @@ if ($tipo_utente === 'Admin') {
                 echo "<p style='color:red;'>⚠️ Inserisci valori realistici per statura e peso.</p>";
             }
         }
+        
 
         $stmt = $conn->prepare("SELECT * FROM paziente WHERE id_paziente = ?");
         $stmt->bind_param("i", $id_utente);
@@ -245,7 +276,7 @@ if ($tipo_utente === 'Admin') {
             echo "<h2>Dati Paziente</h2>";
             echo "<p>Data di nascita: " . htmlspecialchars($data_nascita) . "</p>";
             echo "<p>Sesso: " . htmlspecialchars($sesso) . "</p>";
-
+            echo "<p>🗓️ Registrato il: $data_registrazione</p>";
             if ($statura && $peso) {
                 $bmi = $peso / pow($statura / 100, 2);
                 $bmi = round($bmi, 1);
@@ -307,9 +338,7 @@ if ($tipo_utente === 'Admin') {
         } else {
             echo "<p>Nessuna visita registrata.</p>";
         }
-    }
-
-        echo "<h2>🤖 Richieste Babylon</h2>";
+            echo "<h2>🤖 Richieste Babylon</h2>";
 $stmt = $conn->prepare("
     SELECT u.nome, u.cognome, u.email, c.id_chatbot, c.data_avvio, cb.sintomi_riportati
     FROM chat c
@@ -339,6 +368,9 @@ if ($result->num_rows > 0) {
 } else {
     echo "<p>Nessuna nuova richiesta tramite Babylon.</p>";
 }
+
+
+    }
 
 
 

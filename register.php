@@ -107,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
       backdrop-filter: blur(5px);
     }
+    
     h2 {
       color: #0077cc;
       text-align: center;
