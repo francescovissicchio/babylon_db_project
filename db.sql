@@ -49,7 +49,7 @@ CREATE TABLE `visita` (
   `id_paziente` INT(11) NOT NULL,
   `id_medico` INT(11) NOT NULL,
   `id_chatbot` INT(11) DEFAULT NULL,
-  `data_visita` TIMESTAMP NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `data_visita` DATETIME DEFAULT NULL,
   `esito_visita` TEXT DEFAULT NULL,
   PRIMARY KEY (`id_visita`),
   KEY `id_medico` (`id_medico`),
@@ -71,13 +71,14 @@ CREATE TABLE `sceglie` (
 CREATE TABLE `chat` (
   `id_paziente` INT(11) NOT NULL,
   `id_chatbot` INT(11) NOT NULL,
-  `data_avvio` DATE NOT NULL,
-  `data_fine` DATE DEFAULT NULL,
+  `data_avvio` DATETIME NOT NULL,
+  `data_fine` DATETIME DEFAULT NULL,
   PRIMARY KEY (`id_paziente`, `id_chatbot`),
   KEY `id_chatbot` (`id_chatbot`),
   CONSTRAINT `chat_ibfk_1` FOREIGN KEY (`id_paziente`) REFERENCES `paziente` (`id_paziente`) ON DELETE CASCADE,
   CONSTRAINT `chat_ibfk_2` FOREIGN KEY (`id_chatbot`) REFERENCES `chatbot` (`id_chatbot`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 -- INSERIMENTO ADMIN
 INSERT INTO `utente` (`nome`, `email`, `password`, `tipo_utente`)

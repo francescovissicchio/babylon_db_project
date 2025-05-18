@@ -60,13 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sintomi'])) {
     $id_chatbot = $conn->insert_id;
     $stmt->close();
 
+    // Query modificata (Step 1)
     $stmt = $conn->prepare("
-        SELECT u.id_utente, u.nome, m.Rating
+        SELECT u.id_utente, u.nome, m.Rating, m.Specializzazione
         FROM medico m
         JOIN utente u ON u.id_utente = m.id_medico
         WHERE m.Specializzazione = ? AND m.Disponibilita = TRUE
         ORDER BY m.Rating DESC
     ");
+
     if (!$stmt) die("Errore query: " . $conn->error);
     $stmt->bind_param("s", $specializzazione);
     $stmt->execute();
@@ -93,10 +95,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
     $stmt->execute();
     $stmt->close();
 
-    $stmt = $conn->prepare("INSERT INTO chat (id_paziente, id_chatbot, data_avvio) VALUES (?, ?, CURDATE())");
+    // Rimozione data CURDATE() (Step 2)
+    $stmt = $conn->prepare("INSERT INTO chat (id_paziente, id_chatbot, data_avvio) VALUES (?, ?, NOW())"); // ← niente data_avvio
     $stmt->bind_param("ii", $id_paziente, $id_chatbot);
     $stmt->execute();
     $stmt->close();
+
 }
 ?>
 
@@ -175,13 +179,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
             <input type="hidden" name="id_chatbot" value="<?= $id_chatbot ?>">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
             <table>
-                <tr><th>Seleziona</th><th>Nome</th><th>Rating</th></tr>
+                <tr><th>Seleziona</th><th>Nome</th><th>Specializzazione</th><th>Rating</th></tr>
                 <?php while ($row = $medici->fetch_assoc()): ?>
-                    <tr>
-                        <td><input type="radio" name="id_medico" value="<?= $row['id_utente'] ?>" required></td>
-                        <td><?= htmlspecialchars($row['nome']) ?></td>
-                        <td><?= $row['Rating'] ?></td>
-                    </tr>
+                <tr>
+                <td><input type="radio" name="id_medico" value="<?= $row['id_utente'] ?>" required></td>
+                <td><?= htmlspecialchars($row['nome']) ?></td>
+                <td><?= htmlspecialchars($row['Specializzazione']) ?></td>
+                <td><?= $row['Rating'] ?></td>
+                </tr>
                 <?php endwhile; ?>
             </table><br>
             <button type="submit">Conferma Medico</button>

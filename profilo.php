@@ -270,6 +270,11 @@ if ($tipo_utente === 'Admin') {
                     <button type='submit' name='aggiorna_dati'>📅 Salva</button>
                 </form>";
         }
+        echo "<h2>🤖 Interazione con Babylon</h2>";
+        echo "<p>Hai bisogno di un consulto? Puoi descrivere i tuoi sintomi al nostro chatbot Babylon!</p>";
+        echo "<form method='GET' action='chatbot_logic.php'>
+            <button type='submit'>💬 Avvia Interazione con Babylon</button>
+        </form>";
 
         echo "<h2>📅 Storico Visite</h2>";
 
@@ -305,44 +310,38 @@ if ($tipo_utente === 'Admin') {
     }
 
         echo "<h2>🤖 Richieste Babylon</h2>";
-        $stmt = $conn->prepare("SELECT u.nome, u.cognome, u.email, c.id_chatbot, c.data_avvio
-                                FROM sceglie s
-                                JOIN chat c ON s.id_chatbot = c.id_chatbot
-                                JOIN utente u ON c.id_paziente = u.id_utente
-                                WHERE s.id_medico = ? AND c.id_chatbot NOT IN (
-                                    SELECT id_chatbot FROM visita WHERE id_medico = ?
-                                )
-                                ORDER BY c.data_avvio DESC");
-        $stmt->bind_param("ii", $id_utente, $id_utente);
-        $stmt->execute();
-        $result = $stmt->get_result();
+$stmt = $conn->prepare("
+    SELECT u.nome, u.cognome, u.email, c.id_chatbot, c.data_avvio, cb.sintomi_riportati
+    FROM chat c
+    JOIN chatbot cb ON cb.id_chatbot = c.id_chatbot
+    JOIN utente u ON c.id_paziente = u.id_utente
+    ORDER BY c.data_avvio DESC
+");
+$stmt->execute();
+$result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            echo "<table border='1'>
-                    <tr><th>Paziente</th><th>Email</th><th>Richiesta</th><th>Azioni</th></tr>";
-            while ($row = $result->fetch_assoc()) {
-                $chatbot_id = $row['id_chatbot'];
-                echo "<tr>
-                        <td>" . htmlspecialchars($row['nome'] . ' ' . $row['cognome']) . "</td>
-                        <td>" . htmlspecialchars($row['email']) . "</td>
-                        <td>" . htmlspecialchars($row['data_avvio']) . "</td>
-                        <td>
-                            <form method='POST' style='display:inline-block;'>
-                                <input type='hidden' name='chatbot_id' value='$chatbot_id'>
-                                <input type='datetime-local' name='data_visita' required>
-                                <button type='submit' name='accetta_visita'>✅ Accetta</button>
-                            </form>
-                            <form method='POST' style='display:inline-block; margin-left:10px;'>
-                                <input type='hidden' name='chatbot_id' value='$chatbot_id'>
-                                <button type='submit' name='rifiuta_visita'>❌ Rifiuta</button>
-                            </form>
-                        </td>
-                      </tr>";
-            }
-            echo "</table>";
-        } else {
-            echo "<p>Nessuna nuova richiesta tramite Babylon.</p>";
-        }
+if ($result->num_rows > 0) {
+    echo "<table border='1'>
+            <tr><th>Paziente</th><th>Email</th><th>Data Richiesta</th><th>Sintomi</th></tr>";
+    while ($row = $result->fetch_assoc()) {
+        $nome_paziente = htmlspecialchars($row['nome'] . ' ' . $row['cognome']);
+        $email = htmlspecialchars($row['email']);
+        $data_avvio = htmlspecialchars($row['data_avvio']);
+        $sintomi = htmlspecialchars($row['sintomi_riportati']);
+        echo "<tr>
+                <td>$nome_paziente</td>
+                <td>$email</td>
+                <td>$data_avvio</td>
+                <td>$sintomi</td>
+              </tr>";
+    }
+    echo "</table>";
+} else {
+    echo "<p>Nessuna nuova richiesta tramite Babylon.</p>";
+}
+
+
+
     }
 
 echo '<a href="index.php" style="display:inline-block; margin: 20px 0; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">🏠 Torna alla Home</a>';
