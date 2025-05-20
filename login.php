@@ -16,7 +16,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo "Utente non trovato.";
         } else {
             $utente = $result->fetch_assoc();
-            if (password_verify($password, $utente['password'])) {
+
+            // 👇 Controlla se l'account è disattivato
+            if ($utente['cancellato']) {
+                echo "<p style='color:red;'>⚠️ Il tuo account è disattivato. <a href='recupera_account.php'>Clicca qui per riattivarlo</a>.</p>";
+            }
+            // 👇 Verifica password solo se attivo
+            elseif (password_verify($password, $utente['password'])) {
                 $_SESSION['id_utente'] = $utente['id_utente'];
                 $_SESSION['nome'] = $utente['nome'];
                 $_SESSION['tipo_utente'] = $utente['tipo_utente'];
@@ -32,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="it">
@@ -125,6 +132,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <label for="password">Password:</label>
             <input type="password" name="password" id="password" required>
+            
+            <p style="margin-top:20px;">Hai disattivato il tuo account? <a href="recupera_account.php">Recuperalo qui</a>.</p>
 
             <button type="submit">Login</button>
         </form>

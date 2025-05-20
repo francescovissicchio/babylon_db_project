@@ -35,12 +35,12 @@ session_start();
         }
 
         .box {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.6);
             padding: 30px;
             border-radius: 20px;
             width: 100%;
             max-width: 450px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.8);
             text-align: center;
             z-index: 1;
             position: relative;

@@ -52,6 +52,7 @@ CREATE TABLE `visita` (
   `id_chatbot` INT(11) DEFAULT NULL,
   `data_visita` DATETIME DEFAULT NULL,
   `esito_visita` TEXT DEFAULT NULL,
+  `stato` ENUM('in_attesa', 'pianificata', 'completata', 'annullata') DEFAULT 'in_attesa',
   PRIMARY KEY (`id_visita`),
   KEY `id_medico` (`id_medico`),
   KEY `id_chatbot` (`id_chatbot`),
@@ -59,6 +60,7 @@ CREATE TABLE `visita` (
   CONSTRAINT `visita_ibfk_2` FOREIGN KEY (`id_medico`) REFERENCES `medico` (`id_medico`) ON DELETE CASCADE,
   CONSTRAINT `visita_ibfk_3` FOREIGN KEY (`id_chatbot`) REFERENCES `chatbot` (`id_chatbot`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 CREATE TABLE `sceglie` (
   `id_chatbot` INT(11) NOT NULL,

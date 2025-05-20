@@ -1,5 +1,7 @@
 <?php
 require 'config.php';
+require 'check_accesso.php';
+
 
 function randomNome() {
     $nomi = ['Luca', 'Marco', 'Anna', 'Giulia', 'Francesco', 'Martina', 'Simone', 'Sara', 'Alessandro', 'Laura'];

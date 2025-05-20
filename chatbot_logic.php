@@ -1,6 +1,8 @@
 <?php
 session_start();
 require 'config.php';
+require 'check_accesso.php';
+
 
 if (!isset($_SESSION['id_utente']) || $_SESSION['tipo_utente'] !== 'Paziente') {
     echo "Accesso non autorizzato.";
@@ -19,21 +21,30 @@ if (!isset($_SESSION['csrf_token'])) {
 }
 
 function deduciSpecializzazione($testo) {
-    $mappa = [
-        "cuore" => "Cardiologia",
-        "respiro" => "Pneumologia",
-        "pelle" => "Dermatologia",
-        "mal di testa" => "Neurologia",
-        "stomaco" => "Gastroenterologia",
-        "occhi" => "Oftalmologia"
-    ];
-    foreach ($mappa as $parola => $spec) {
-        if (stripos($testo, $parola) !== false) {
-            return $spec;
-        }
+    $url = 'http://localhost:8000/deduci';
+
+    $data = json_encode(['sintomi' => $testo]);
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+
+    $response = curl_exec($ch);
+
+    if (curl_errno($ch)) {
+        curl_close($ch);
+        return "Medicina generale"; // fallback in caso di errore
     }
-    return "Medicina generale";
+
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    return $result['specializzazione'] ?? "Medicina generale";
 }
+
 
 // Step 1
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sintomi'])) {
@@ -107,51 +118,116 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chatbot Medico</title>
+    <title>Chatbot Babylon</title>
     <style>
         body {
-            font-family: Arial;
-            padding: 20px;
-            background: #f8f9fa;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: url('uploads/hammurabi.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
         }
+
+        .container {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            max-width: 700px;
+            margin: 50px auto;
+            border-radius: 20px;
+            box-shadow: 0 0 20px rgba(255,255,255,0.7);
+        }
+
         .bot-box {
-            background-color: #e8f0fe;
-            border-left: 5px solid #0077cc;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 5px solid #00bfff;
             padding: 15px;
             margin-bottom: 20px;
+            border-radius: 10px;
         }
+
         .progress {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
-            max-width: 600px;
+            margin-bottom: 30px;
         }
+
         .progress div {
             flex: 1;
             text-align: center;
-            padding: 8px;
+            padding: 10px;
             border-bottom: 3px solid #ccc;
+            color: #ccc;
         }
+
         .progress .active {
-            border-color: #0077cc;
+            border-color: #00bfff;
             font-weight: bold;
+            color: #fff;
         }
-        table {
-            border-collapse: collapse;
+
+        textarea, input[type="radio"] {
             margin-top: 10px;
-            width: 100%;
-            max-width: 600px;
         }
-        table th, table td {
-            border: 1px solid #ccc;
-            padding: 8px;
-        }
+
         textarea {
             width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            resize: none;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #444;
+            color: #fff;
+            text-align: center;
+        }
+
+        button {
+            background-color: #00bfff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            margin-top: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #009acd;
+        }
+
+        a.button {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        a.button.secondary {
+            background: #0077cc;
+        }
+
+        a.button:hover {
+            opacity: 0.9;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+
 
 <div class="progress">
     <div class="<?= $step === 1 ? 'active' : '' ?>">1. Inserisci Sintomi</div>
@@ -161,7 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
 
 <?php if ($step === 1): ?>
     <div class="bot-box">
-        <strong>Dr. Babylon:</strong> Ciao! Raccontami i tuoi sintomi e ti aiuterò a trovare lo specialista più adatto.
+        <strong>Chatbot Babylon:</strong> Ciao! Raccontami i tuoi sintomi e ti aiuterò a trovare lo specialista più adatto.
     </div>
     <form method="POST">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
@@ -172,7 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
 
 <?php elseif ($step === 2): ?>
     <div class="bot-box">
-        <strong>Dr. Babylon:</strong> Ho analizzato i tuoi sintomi. Questi sono i medici più adatti:
+        <strong>Chatbot Babylon:</strong> Ho analizzato i tuoi sintomi. Questi sono i medici più adatti:
     </div>
     <?php if ($medici->num_rows > 0): ?>
         <form method="POST">
@@ -192,16 +268,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
             <button type="submit">Conferma Medico</button>
         </form>
     <?php else: ?>
-        <p><strong>Dr. Babylon:</strong> Nessun medico disponibile al momento con la specializzazione richiesta.</p>
+        <p><strong>Chatbot Babylon:</strong> Nessun medico disponibile al momento con la specializzazione richiesta.</p>
         <a href="chatbot_logic.php">🔁 Reinserisci sintomi</a>
     <?php endif; ?>
 
 <?php elseif ($step === 3): ?>
     <div class="bot-box">
-        <strong>Dr. Babylon:</strong> ✅ Visita prenotata con successo! Puoi trovare i dettagli nel tuo profilo.
+        <strong>Chatbot Babylon:</strong> ✅ Visita prenotata con successo! Puoi trovare i dettagli nel tuo profilo.
     </div>
     <a href="profilo.php">🔙 Torna al tuo profilo</a>
 <?php endif; ?>
+
+<a href="profilo.php" style="display:inline-block; margin-top: 10px; padding: 10px 20px; background:#28a745; color:white; text-decoration:none; border-radius:8px;">
+👤 Torna al Profilo
+</a>
 
 <a href="index.php" style="display:inline-block; margin-top: 30px; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">
 🏠 Torna alla Home
