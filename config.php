@@ -1,6 +1,6 @@
 <?php
 $host = "localhost";
-$db = "progetto_babylon_vissicchio";
+$db = "progetto_bdd_chatbot";
 $user = "root";
 $pass = ""; // <-- lasciato vuoto se non hai impostato una password
 

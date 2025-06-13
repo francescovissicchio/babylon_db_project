@@ -26,12 +26,8 @@ session_start();
         }
 
         @keyframes scrollBg {
-            0% {
-                background-position: center top;
-            }
-            100% {
-                background-position: center bottom;
-            }
+            0% { background-position: center top; }
+            100% { background-position: center bottom; }
         }
 
         .box {
@@ -106,24 +102,24 @@ session_start();
         <?php else: ?>
             <?php if ($_SESSION['tipo_utente'] === 'Admin'): ?>
                 <li><a href="profilo.php">🛠️ Area Admin</a></li>
-            <?php else: ?>
-                <li><a href="profilo.php">👤 Profilo personale</a></li>
-            <?php endif; ?>
-
-            <?php if ($_SESSION['tipo_utente'] === 'Paziente'): ?>
-                <li><a href="chatbot_logic.php">🤖 Chatbot visita</a></li>
-            <?php elseif ($_SESSION['tipo_utente'] === 'Medico'): ?>
-                <li><a href="medico_dashboard.php">🩺 Area Medico</a></li>
-            <?php endif; ?>
-
-            <?php if ($_SESSION['tipo_utente'] === 'Admin'): ?>
                 <li><a href="lista_utenti.php">📄 Lista Utenti Registrati</a></li>
                 <li><a href="popola_db.php">🧪 Rigenera dati demo</a></li>
                 <li><a href="simula_visite.php">📅 Simula Visite</a></li>
                 <li><a href="tutte_visite.php">📋 Tutte le Visite</a></li>
                 <li><a href="azzera_database.php" onclick="return confirm('Sei sicuro di voler azzerare tutto il database?')">🗑️ Azzera Database</a></li>
+            <?php elseif ($_SESSION['tipo_utente'] === 'Medico'): ?>
+                <li><a href="medico_dashboard.php">🩺 Area Medico</a></li>
+                <li><a href="visualizza_terapie.php">💊 Terapie Pazienti</a></li>
+                <li><a href="visualizza_esami.php">🧪 Esami Pazienti</a></li>
+                <li><a href="care_attivi.php">📑 Follow-up Attivi</a></li>
+            <?php elseif ($_SESSION['tipo_utente'] === 'Paziente'): ?>
+                <li><a href="chatbot_logic.php">🤖 Chatbot Visita</a></li>
+                <li><a href="mie_terapie.php">💊 Le mie Terapie</a></li>
+                <li><a href="mie_esami.php">🧪 I miei Esami</a></li>
+                <li><a href="miei_followup.php">📋 Mio Follow-up</a></li>
             <?php endif; ?>
 
+            <li><a href="profilo.php">👤 Profilo</a></li>
             <li><a href="logout.php">🚪 Logout</a></li>
         <?php endif; ?>
     </ul>
@@ -131,6 +127,3 @@ session_start();
 
 </body>
 </html>
-
-
-
