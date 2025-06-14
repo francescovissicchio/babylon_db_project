@@ -4,7 +4,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require 'config.php';
 require 'check_accesso.php';
-
+ob_start();
 // Disattivazione (soft delete) – PRIMA DI QUALSIASI HTML O ECHO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['elimina_account'])) {
     $id_utente = $_SESSION['id_utente']; // Assicurati che venga dalla sessione
@@ -133,46 +133,47 @@ if ($tipo_utente === 'Admin') {
 
     // ✅ POST actions
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Toggle disponibilità
+
+    // Cambia disponibilità
     if (isset($_POST['toggle_disponibilita'])) {
         $nuovo_stato = ($_POST['stato_attuale'] == 1) ? 0 : 1;
         $stmt = $conn->prepare("UPDATE medico SET disponibilita = ? WHERE id_medico = ?");
         $stmt->bind_param("ii", $nuovo_stato, $id_utente);
         $stmt->execute();
-        echo "<p style='color:green;'>✅ Stato disponibilità aggiornato.</p>";
+        header("Location: profilo.php");
+        exit();
     }
- }
 
     // Aggiorna specializzazione
     if (isset($_POST['aggiorna_specializzazione'])) {
         $specializzazione = $_POST['specializzazione'] ?? '';
-        $valid = ['Cardiologia','Dermatologia','Neurologia','Ortopedia','Medicina generale'];
+        $valid = ['Cardiologia','Dermatologia','Neurologia','Ortopedia','Medicina generale','Psichiatria','Gastroenterologia','Pediatria','Ginecologia','Oftalmologia','Endocrinologia','Urologia'];
         if (in_array($specializzazione, $valid)) {
             $stmt = $conn->prepare("UPDATE medico SET specializzazione = ? WHERE id_medico = ?");
             $stmt->bind_param("si", $specializzazione, $id_utente);
             $stmt->execute();
-            echo "<p style='color:green;'>✅ Specializzazione aggiornata.</p>";
+            header("Location: profilo.php");
+            exit();
         }
     }
 
-    // Accetta visita
+    // Conferma visita (aggiorna esistente)
     if (isset($_POST['accetta_visita'])) {
         $chatbot_id = (int)$_POST['chatbot_id'];
         $data_visita = $_POST['data_visita'] ?? null;
+
         if ($data_visita && DateTime::createFromFormat('Y-m-d\TH:i', $data_visita)) {
-            $stmt = $conn->prepare("SELECT id_paziente FROM chat WHERE id_chatbot = ?");
-            $stmt->bind_param("i", $chatbot_id);
+            $stmt = $conn->prepare("
+                UPDATE visita
+                SET data_visita = ?, stato = 'pianificata', esito_visita = 'In attesa...'
+                WHERE id_chatbot = ? AND id_medico = ? AND stato = 'in_attesa'
+            ");
+            $stmt->bind_param("sii", $data_visita, $chatbot_id, $id_utente);
             $stmt->execute();
-            $res = $stmt->get_result()->fetch_assoc();
-            if ($res) {
-                $id_paziente = $res['id_paziente'];
-                $esito = "In attesa...";
-                $stato = "pianificata";
-                $stmt = $conn->prepare("INSERT INTO visita (id_paziente, id_medico, id_chatbot, data_visita, esito_visita, stato) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->bind_param("iiisss", $id_paziente, $id_utente, $chatbot_id, $data_visita, $esito, $stato);
-                $stmt->execute();
-                echo "<p style='color:green;'>✅ Visita confermata per $data_visita.</p>";
-            }
+            header("Location: profilo.php");
+            exit();
+        } else {
+            echo "<p style='color:red;'>⚠️ Data non valida.</p>";
         }
     }
 
@@ -185,7 +186,8 @@ if ($tipo_utente === 'Admin') {
             $stmt = $conn->prepare("UPDATE visita SET esito_visita = ?, stato = ? WHERE id_visita = ? AND id_medico = ?");
             $stmt->bind_param("ssii", $nuovo_esito, $stato, $id_visita, $id_utente);
             $stmt->execute();
-            echo "<p style='color:green;'>✅ Esito aggiornato.</p>";
+            header("Location: profilo.php");
+            exit();
         } else {
             echo "<p style='color:red;'>⚠️ Esito troppo breve.</p>";
         }
@@ -194,11 +196,13 @@ if ($tipo_utente === 'Admin') {
     // Rifiuta visita
     if (isset($_POST['rifiuta_visita'])) {
         $chatbot_id = (int)$_POST['chatbot_id'];
-        $stmt = $conn->prepare("DELETE FROM sceglie WHERE id_chatbot = ? AND id_medico = ?");
+        $stmt = $conn->prepare("UPDATE visita SET stato = 'rifiutata' WHERE id_chatbot = ? AND id_medico = ?");
         $stmt->bind_param("ii", $chatbot_id, $id_utente);
         $stmt->execute();
-        echo "<p style='color:red;'>❌ Richiesta rifiutata.</p>";
+        header("Location: profilo.php");
+        exit();
     }
+}
     
 
     // ✅ Dati medico
@@ -208,7 +212,7 @@ if ($tipo_utente === 'Admin') {
     $medico = $stmt->get_result()->fetch_assoc();
 
     $specializzazione = htmlspecialchars($medico['specializzazione']);
-    $rating = htmlspecialchars($medico['rating']);
+    $rating = number_format((float)$medico['rating'], 1);
     $disponibilita = (int)$medico['disponibilita'];
     $stato = $disponibilita ? '🟢 Disponibile' : '🔴 Non disponibile';
 
@@ -229,24 +233,37 @@ if ($tipo_utente === 'Admin') {
               <option value='Neurologia'>Neurologia</option>
               <option value='Ortopedia'>Ortopedia</option>
               <option value='Medicina generale'>Medicina generale</option>
+              <option value='Psichiatria'>Psichiatria</option>
+              <option value='Gastroenterologia'>Gastroenterologia</option>
+              <option value='Pediatria'>Pediatria</option>
+              <option value='Ginecologia'>Ginecologia</option>
+              <option value='Oftalmologia'>Oftalmologia</option>
+              <option value='Endocrinologia'>Endocrinologia</option>
+              <option value='Urologia'>Urologia</option>
           </select>
           <button type='submit' name='aggiorna_specializzazione'>Salva</button>
       </form>";
 
+
     // ✅ RICHIESTE da confermare
     echo "<h2>📝 Richieste da Confermare</h2>";
-    $stmt = $conn->prepare("
+    $stmt_richieste = $conn->prepare("
     SELECT c.id_chatbot, u.nome, u.cognome, cb.sintomi_riportati
     FROM sceglie s
     JOIN chat c ON s.id_chatbot = c.id_chatbot
     JOIN utente u ON c.id_paziente = u.id_utente
     JOIN chatbot cb ON cb.id_chatbot = c.id_chatbot
-    LEFT JOIN visita v ON v.id_chatbot = s.id_chatbot AND v.id_medico = s.id_medico
-    WHERE s.id_medico = ? AND v.id_visita IS NULL
+    JOIN visita v ON v.id_chatbot = s.id_chatbot AND v.id_medico = s.id_medico
+    WHERE s.id_medico = ? 
+        AND v.stato = 'in_attesa'
+        AND v.data_visita IS NULL 
+        AND v.esito_visita IS NULL
     ");
-    $stmt->bind_param("i", $id_utente);
-    $stmt->execute();
-    $richieste = $stmt->get_result();
+$stmt_richieste->bind_param("i", $id_utente);
+$stmt_richieste->execute();
+$richieste = $stmt_richieste->get_result();
+
+
 
     if ($richieste->num_rows > 0) {
     echo "<table border='1'><tr><th>Paziente</th><th>Sintomi</th><th>Data Visita</th><th>Azioni</th></tr>";
@@ -269,25 +286,33 @@ if ($tipo_utente === 'Admin') {
     echo "<p>Nessuna richiesta da confermare.</p>";
     }
 
-    // ✅ VISITE IN ATTESA DI ESITO
-    echo "<h2>🕒 Visite in Attesa</h2>";
-    $stmt = $conn->prepare("
-    SELECT v.id_visita, v.data_visita, u.nome, u.cognome, v.esito_visita
-    FROM visita v
-    JOIN utente u ON v.id_paziente = u.id_utente
-    WHERE v.id_medico = ? AND v.stato = 'pianificata'
-    ORDER BY v.data_visita ASC
-    ");
-    $stmt->bind_param("i", $id_utente);
-    $stmt->execute();
-    $attesa = $stmt->get_result();
+    echo "<h2>🕒 Visite in Attesa di esito</h2>";
+$stmt = $conn->prepare("
+SELECT v.id_visita, v.data_visita, u.nome, u.cognome, v.esito_visita, cb.sintomi_riportati
+FROM visita v
+JOIN utente u ON v.id_paziente = u.id_utente
+JOIN chatbot cb ON v.id_chatbot = cb.id_chatbot
+WHERE v.id_medico = ? AND v.stato = 'pianificata'
+ORDER BY v.data_visita ASC
+");
+$stmt->bind_param("i", $id_utente);
+$stmt->execute();
+$attesa = $stmt->get_result();
 
-    if ($attesa->num_rows > 0) {
-    echo "<table border='1'><tr><th>Data</th><th>Paziente</th><th>Esito attuale</th><th>Nuovo esito</th></tr>";
+if ($attesa->num_rows > 0) {
+    echo "<table border='1'>
+            <tr>
+                <th>Data</th>
+                <th>Paziente</th>
+                <th>Sintomi</th>
+                <th>Esito attuale</th>
+                <th>Nuovo esito</th>
+            </tr>";
     while ($v = $attesa->fetch_assoc()) {
         echo "<tr>
                 <td>" . htmlspecialchars($v['data_visita']) . "</td>
                 <td>" . htmlspecialchars($v['nome']) . " " . htmlspecialchars($v['cognome']) . "</td>
+                <td>" . htmlspecialchars($v['sintomi_riportati']) . "</td>
                 <td>" . htmlspecialchars($v['esito_visita']) . "</td>
                 <td>
                     <form method='POST'>
@@ -299,37 +324,48 @@ if ($tipo_utente === 'Admin') {
               </tr>";
     }
     echo "</table>";
-    } else {
+} else {
     echo "<p>Nessuna visita in attesa.</p>";
-    }
+}
+
 
     // ✅ VISITE CONCLUSE
     echo "<h2>✅ Visite Concluse</h2>";
     $stmt = $conn->prepare("
-    SELECT v.data_visita, u.nome, u.cognome, u.email, v.esito_visita
+    SELECT v.data_visita, u.nome, u.cognome, v.esito_visita, cb.sintomi_riportati
     FROM visita v
     JOIN utente u ON v.id_paziente = u.id_utente
+    JOIN chatbot cb ON v.id_chatbot = cb.id_chatbot
     WHERE v.id_medico = ? AND v.stato = 'completata'
     ORDER BY v.data_visita DESC
     ");
+
     $stmt->bind_param("i", $id_utente);
     $stmt->execute();
     $concluse = $stmt->get_result();
 
     if ($concluse->num_rows > 0) {
-    echo "<table border='1'><tr><th>Data</th><th>Paziente</th><th>Email</th><th>Esito</th></tr>";
+        echo "<table border='1'>
+            <tr>
+                <th>Data</th>
+                <th>Paziente</th>
+                <th>Sintomi</th>
+                <th>Esito</th>
+            </tr>";
     while ($v = $concluse->fetch_assoc()) {
         echo "<tr>
                 <td>" . htmlspecialchars($v['data_visita']) . "</td>
                 <td>" . htmlspecialchars($v['nome']) . " " . htmlspecialchars($v['cognome']) . "</td>
-                <td>" . htmlspecialchars($v['email']) . "</td>
+                <td>" . htmlspecialchars($v['sintomi_riportati']) . "</td>
                 <td>" . htmlspecialchars($v['esito_visita']) . "</td>
               </tr>";
     }
     echo "</table>";
     } else {
-    echo "<p>Nessuna visita conclusa ancora.</p>";
+        echo "<p>Nessuna visita conclusa ancora.</p>";
     }
+
+
 
     // ✅ Disattiva account
     echo "<form method='POST' onsubmit=\"return confirm('Sei sicuro di voler disattivare il tuo account?')\">
@@ -353,6 +389,7 @@ if ($tipo_utente === 'Admin') {
                 echo "<p style='color:red;'>⚠️ Inserisci valori realistici per statura e peso.</p>";
             }
         }
+    
         
 
         $stmt = $conn->prepare("SELECT * FROM paziente WHERE id_paziente = ?");
@@ -412,37 +449,9 @@ if ($tipo_utente === 'Admin') {
             <button type='submit'>💬 Avvia Interazione con Babylon</button>
         </form>";
 
-        echo "<h2>📅 Storico Visite</h2>";
 
-        $query = "
-            SELECT v.data_visita, v.esito_visita, m.Specializzazione, u.nome AS nome_medico, u.cognome AS cognome_medico
-            FROM visita v
-            JOIN medico m ON v.id_medico = m.id_medico
-            JOIN utente u ON m.id_medico = u.id_utente
-            WHERE v.id_paziente = ?
-            ORDER BY v.data_visita DESC
-        ";
-        $stmt = $conn->prepare($query);
-        $stmt->bind_param("i", $id_utente);
-        $stmt->execute();
-        $result = $stmt->get_result();
 
-        if ($result->num_rows > 0) {
-            echo "<table border='1'>
-                    <tr><th>Data Visita</th><th>Medico</th><th>Specializzazione</th><th>Esito</th></tr>";
-            while ($v = $result->fetch_assoc()) {
-                $nome_medico = htmlspecialchars($v['nome_medico']) . ' ' . htmlspecialchars($v['cognome_medico']);
-                echo "<tr>
-                        <td>" . htmlspecialchars($v['data_visita']) . "</td>
-                        <td>$nome_medico</td>
-                        <td>" . htmlspecialchars($v['Specializzazione']) . "</td>
-                        <td>" . htmlspecialchars($v['esito_visita']) . "</td>
-                      </tr>";
-            }
-            echo "</table>";
-        } else {
-            echo "<p>Nessuna visita registrata.</p>";
-        }
+
             echo "<h2>🤖 Richieste Babylon</h2>";
     $stmt = $conn->prepare("
     SELECT u.nome, u.cognome, u.email, c.id_chatbot, c.data_avvio, cb.sintomi_riportati
@@ -477,10 +486,110 @@ if ($tipo_utente === 'Admin') {
     echo "<p>Nessuna nuova richiesta tramite Babylon.</p>";
     }
 
-    // Bottone "Elimina account"
-    echo "<form method='POST' onsubmit=\"return confirm('Sei sicuro di voler disattivare il tuo account? Potrai riattivarlo in futuro.')\">
-         <button type='submit' name='elimina_account' style='background:red; color:white; padding: 8px 16px; margin-top: 10px;'>❌ Disattiva Account</button>
-        </form>";
+    echo "<h2>📅 Storico Visite</h2>";
+        $query = "
+            SELECT v.data_visita, v.esito_visita, v.rating, m.Specializzazione, u.nome AS nome_medico, u.cognome AS cognome_medico, v.id_visita
+            FROM visita v
+            JOIN medico m ON v.id_medico = m.id_medico
+            JOIN utente u ON m.id_medico = u.id_utente
+            WHERE v.id_paziente = ?
+            ORDER BY v.data_visita DESC
+        ";
+        $stmt = $conn->prepare($query);
+        $stmt->bind_param("i", $id_utente);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows > 0) {
+    echo "<table border='1'>
+            <tr><th>Data Visita</th><th>Medico</th><th>Specializzazione</th><th>Esito</th></tr>";
+    while ($v = $result->fetch_assoc()) {
+        $nome_medico = htmlspecialchars($v['nome_medico']) . ' ' . htmlspecialchars($v['cognome_medico']);
+        echo "<tr>
+                <td>" . htmlspecialchars($v['data_visita']) . "</td>
+                <td>$nome_medico</td>
+                <td>" . htmlspecialchars($v['Specializzazione']) . "</td>
+                <td>" . htmlspecialchars($v['esito_visita']) . "</td>
+              </tr>";
+
+        if ($v['esito_visita'] && is_null($v['rating'])) {
+            echo "<tr><td colspan='4'>
+                    <form method='POST'>
+                        <input type='hidden' name='id_visita' value='" . htmlspecialchars($v['id_visita']) . "'>
+                        <label>Valuta il medico (1-5 ⭐):</label>
+                        <select name='rating' required>
+                            <option value='' disabled selected>--</option>
+                            <option value='1'>⭐</option>
+                            <option value='2'>⭐⭐</option>
+                            <option value='3'>⭐⭐⭐</option>
+                            <option value='4'>⭐⭐⭐⭐</option>
+                            <option value='5'>⭐⭐⭐⭐⭐</option>
+                        </select>
+                        <button type='submit' name='valuta_medico'>Invia valutazione</button>
+                    </form>
+                  </td></tr>";
+        } elseif (!is_null($v['rating'])) {
+            echo "<tr><td colspan='4'>Hai valutato questa visita: " . str_repeat("⭐", (int)$v['rating']) . "</td></tr>";
+        }
+    } 
+    // ✅ Qui è la chiusura corretta del while
+
+
+    echo "</table>"; // ✅ Chiusura tabella dopo il while
+} else {
+    echo "<p>Nessuna visita registrata.</p>";
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['valuta_medico'])) {
+    $id_visita = (int)$_POST['id_visita'];
+    $rating = (int)$_POST['rating'];
+
+    if ($rating >= 1 && $rating <= 5) {
+        // Salva il rating nella visita
+        $stmt = $conn->prepare("UPDATE visita SET rating = ? WHERE id_visita = ? AND id_paziente = ?");
+        $stmt->bind_param("iii", $rating, $id_visita, $id_utente);
+        $stmt->execute();
+        $stmt->close();
+
+        // Recupera medico
+        $stmt = $conn->prepare("SELECT id_medico FROM visita WHERE id_visita = ?");
+        $stmt->bind_param("i", $id_visita);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $id_medico = $res->fetch_assoc()['id_medico'];
+        $stmt->close();
+
+        // Calcola nuova media
+        $stmt = $conn->prepare("SELECT AVG(rating) AS media_rating FROM visita WHERE id_medico = ? AND rating IS NOT NULL AND stato = 'completata'");
+        $stmt->bind_param("i", $id_medico);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $media = $res->fetch_assoc()['media_rating'];
+        $stmt->close();
+
+        // Aggiorna profilo medico
+        $stmt = $conn->prepare("UPDATE medico SET rating = ? WHERE id_medico = ?");
+        $stmt->bind_param("di", $media, $id_medico);
+        $stmt->execute();
+        $stmt->close();
+
+        // 🔁 Reload per aggiornare interfaccia
+        header("Location: " . $_SERVER['REQUEST_URI']);
+        exit();
+    } else {
+        echo "<p style='color:red;'>⚠️ Valutazione non valida.</p>";
+    }
+}
+
+
+
+
+
+// ✅ Ora il bottone sarà **davvero** in fondo
+echo "<form method='POST' onsubmit=\"return confirm('Sei sicuro di voler disattivare il tuo account? Potrai riattivarlo in futuro.')\">
+     <button type='submit' name='elimina_account' style='background:red; color:white; padding: 8px 16px; margin-top: 30px;'>❌ Disattiva Account</button>
+</form>";
+
 
 } else {
 
@@ -495,6 +604,9 @@ if ($tipo_utente === 'Admin') {
     $cognome = htmlspecialchars($utente['cognome']);
     $email = htmlspecialchars($utente['email']);
     $data_registrazione = htmlspecialchars($utente['data_registrazione']);
+
+
+
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_foto']) && isset($_FILES['foto'])) {
         $file = $_FILES['foto'];
@@ -528,7 +640,7 @@ if ($tipo_utente === 'Admin') {
 
 
 
-
+ob_end_flush();
 
 ?>
 

@@ -12,15 +12,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cognome = trim($_POST['cognome'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
+    $conferma_password = $_POST['conferma_password'] ?? '';
     $tipo_utente = $_POST['tipo_utente'] ?? '';
 
-    if (!$nome || !$cognome || !$email || !$password || !$tipo_utente) {
+    // ✅ Controlli preliminari
+    if (!$nome || !$cognome || !$email || !$password || !$conferma_password || !$tipo_utente) {
         $messaggio = "⚠️ Compila tutti i campi richiesti.";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $messaggio = "⚠️ Inserisci un'email valida.";
     } elseif (strlen($password) < 8) {
         $messaggio = "⚠️ La password deve contenere almeno 8 caratteri.";
+    } elseif ($password !== $conferma_password) {
+        $messaggio = "⚠️ Le password non corrispondono.";
     } else {
+        // ✅ Controllo se l'email è già registrata
         $stmt = $conn->prepare("SELECT id_utente FROM utente WHERE email = ?");
         if (!$stmt) {
             die("Errore nella preparazione della query: " . $conn->error);
@@ -32,9 +37,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->num_rows > 0) {
             $messaggio = "⚠️ Email già in uso.";
         } else {
+            // ✅ Inizio transazione
             $conn->begin_transaction();
             try {
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+                // Inserimento utente
                 $stmt = $conn->prepare("INSERT INTO utente (nome, cognome, email, password, tipo_utente) VALUES (?, ?, ?, ?, ?)");
                 if (!$stmt) throw new Exception("Errore nella query utente: " . $conn->error);
                 $stmt->bind_param("sssss", $nome, $cognome, $email, $hashed_password, $tipo_utente);
@@ -42,12 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $id_utente = $stmt->insert_id;
 
                 if ($tipo_utente === "Medico") {
+                    // Inserimento medico
                     $specializzazione = $_POST['specializzazione'] ?? 'Medicina generale';
                     $stmt = $conn->prepare("INSERT INTO medico (id_medico, specializzazione) VALUES (?, ?)");
                     if (!$stmt) throw new Exception("Errore nella query medico: " . $conn->error);
                     $stmt->bind_param("is", $id_utente, $specializzazione);
                     $stmt->execute();
                 } else {
+                    // Inserimento paziente
                     $data_nascita = $_POST['data_nascita'] ?? null;
                     $sesso = $_POST['sesso'] ?? null;
                     $statura_cm = $_POST['statura_cm'] ?? null;
@@ -77,6 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="it">
@@ -154,7 +165,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       display: flex;
       gap: 15px;
       margin-top: 10px;
+    
     }
+    .message {
+    margin-top: 15px;
+    font-weight: bold;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 1px solid red;
+    color: darkred;
+    }
+
+    .message.success {
+    background-color: rgba(0, 255, 0, 0.1);
+    border: 1px solid green;
+    color: green;
+    }
+
     .radio-group input[type="radio"] { display: none; }
     .radio-group label {
       padding: 10px 20px;
@@ -222,7 +251,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? '') ?>" required>
 
         <label for="password">Password:</label>
-        <input type="password" id="password" name="password" minlength="8" required>
+        <input type="password" name="password" id="password" required>
+
+        <label for="conferma_password">Conferma Password:</label>
+        <input type="password" name="conferma_password" id="conferma_password" required>
 
         <label for="tipo_utente">Tipo utente:</label>
         <select name="tipo_utente" id="tipo_utente" required>
@@ -238,7 +270,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $specializzazioni = [
                 "Cardiologia", "Dermatologia", "Neurologia", "Ortopedia",
                 "Medicina generale", "Psichiatria", "Gastroenterologia",
-                "Pediatria", "Ginecologia", "Oftalmologia", "Endocrinologia"
+                "Pediatria", "Ginecologia", "Oftalmologia", "Endocrinologia", "Urologia"
             ];
             foreach ($specializzazioni as $spec) {
                 $selected = ($_POST['specializzazione'] ?? '') === $spec ? 'selected' : '';

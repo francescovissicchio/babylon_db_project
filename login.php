@@ -2,6 +2,8 @@
 session_start();
 require 'config.php';
 
+$messaggio = ''; // questa variabile viene poi stampata in HTML
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? null;
     $password = $_POST['password'] ?? null;
@@ -13,31 +15,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $stmt->get_result();
 
         if ($result->num_rows === 0) {
-            echo "Utente non trovato.";
+            $messaggio = "❌ Utente non trovato.";
         } else {
             $utente = $result->fetch_assoc();
 
-            // 👇 Controlla se l'account è disattivato
             if ($utente['cancellato']) {
-                echo "<p style='color:red;'>⚠️ Il tuo account è disattivato. <a href='recupera_account.php'>Clicca qui per riattivarlo</a>.</p>";
-            }
-            // 👇 Verifica password solo se attivo
-            elseif (password_verify($password, $utente['password'])) {
+                $messaggio = "⚠️ Il tuo account è disattivato. <a href='recupera_account.php'>Clicca qui per riattivarlo</a>.";
+            } elseif (password_verify($password, $utente['password'])) {
                 $_SESSION['id_utente'] = $utente['id_utente'];
                 $_SESSION['nome'] = $utente['nome'];
                 $_SESSION['tipo_utente'] = $utente['tipo_utente'];
-
                 header("Location: profilo.php");
                 exit;
             } else {
-                echo "Password errata.";
+                $messaggio = "❌ Password errata.";
             }
         }
     } else {
-        echo "Inserisci email e password.";
+        $messaggio = "⚠️ Inserisci email e password.";
     }
 }
 ?>
+
 
 
 <!DOCTYPE html>
@@ -121,24 +120,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .home-link:hover {
             background-color: #005fa3;
         }
+
+        .alert {
+        background: rgba(255, 0, 0, 0.1);
+        border: 1px solid red;
+        color: darkred;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: left;
+        }
+
     </style>
 </head>
 <body>
     <div class="login-container">
-        <h2>Login</h2>
-        <form method="POST">
-            <label for="email">Email:</label>
-            <input type="email" name="email" id="email" required>
+    <h2>Login</h2>
 
-            <label for="password">Password:</label>
-            <input type="password" name="password" id="password" required>
-            
-            <p style="margin-top:20px;">Hai disattivato il tuo account? <a href="recupera_account.php">Recuperalo qui</a>.</p>
+    <?php if (!empty($messaggio)): ?>
+        <div class="alert"><?= $messaggio ?></div>
+    <?php endif; ?>
 
-            <button type="submit">Login</button>
-        </form>
-        <a class="home-link" href="index.php">🏠 Torna alla Home</a>
-    </div>
+    <form method="POST">
+        <label for="email">Email:</label>
+        <input type="email" name="email" id="email" required>
+
+        <label for="password">Password:</label>
+        <input type="password" name="password" id="password" required>
+        
+        <p style="margin-top:20px;">
+            Hai disattivato il tuo account?
+        <a href="recupera_account.php" style="color:#00ffff; text-decoration:none;">Recuperalo qui</a>.
+        </p>
+
+        <button type="submit">Login</button>
+    </form>
+    <a class="home-link" href="index.php">🏠 Torna alla Home</a>
+</div>
 </body>
 </html>
 

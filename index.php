@@ -110,11 +110,6 @@ session_start();
                 <li><a href="profilo.php">👤 Profilo personale</a></li>
             <?php endif; ?>
 
-            <?php if ($_SESSION['tipo_utente'] === 'Paziente'): ?>
-                <li><a href="chatbot_logic.php">🤖 Chatbot visita</a></li>
-            <?php elseif ($_SESSION['tipo_utente'] === 'Medico'): ?>
-                <li><a href="medico_dashboard.php">🩺 Area Medico</a></li>
-            <?php endif; ?>
 
             <?php if ($_SESSION['tipo_utente'] === 'Admin'): ?>
                 <li><a href="lista_utenti.php">📄 Lista Utenti Registrati</a></li>

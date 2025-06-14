@@ -5,18 +5,29 @@
     <title>Account Disattivato</title>
     <style>
         body {
-            font-family: Arial;
-            background-color: #f8f9fa;
-            text-align: center;
-            padding: 60px;
+        margin: 0;
+        font-family: 'Segoe UI', sans-serif;
+        background: url('uploads/jinn.jpg') no-repeat center center fixed;
+        background-size: cover;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh; /* ✅ per centratura verticale */
         }
+
+
         .box {
-            background: white;
-            display: inline-block;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        background: rgba(255, 255, 255, 0.6);
+        display: inline-block;
+        padding: 40px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.8);
+        color: black; /* ✅ aggiunto */
+        max-width: 500px;
+        text-align: center;
         }
+
         a {
             display: inline-block;
             margin-top: 20px;

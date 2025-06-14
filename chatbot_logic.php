@@ -276,7 +276,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
     <div class="bot-box">
         <strong>Chatbot Babylon:</strong> ✅ Visita prenotata con successo! Puoi trovare i dettagli nel tuo profilo.
     </div>
-    <a href="profilo.php">🔙 Torna al tuo profilo</a>
 <?php endif; ?>
 
 <a href="profilo.php" style="display:inline-block; margin-top: 10px; padding: 10px 20px; background:#28a745; color:white; text-decoration:none; border-radius:8px;">

@@ -19,6 +19,11 @@ def deduci_specializzazione(input: SintomiInput):
     - Gastroenterologia
     - Oftalmologia
     - Medicina generale
+    - Psichiatria
+    - Ginecologia
+    - Oftalmologia
+    - Endocrinologia
+    - Urologia
     Rispondi solo con il nome della specializzazione.
     """
 
