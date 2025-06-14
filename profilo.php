@@ -163,6 +163,39 @@ $stmt->execute();
 $result = $stmt->get_result();
 $row = $result->fetch_assoc();
 
+// 🔒 Permetti upload solo a Medico e Paziente
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST' &&
+    isset($_POST['upload_foto']) &&
+    isset($_FILES['foto']) &&
+    in_array($tipo_utente, ['Medico', 'Paziente'])
+) {
+    $file = $_FILES['foto'];
+    $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+    if ($file['error'] === UPLOAD_ERR_OK && in_array($ext, $allowed)) {
+        $newFileName = 'user_' . $id_utente . '_' . time() . '.' . $ext;
+        $uploadPath = 'uploads/' . $newFileName;
+
+        if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
+            $stmt = $conn->prepare("UPDATE utente SET foto_profilo = ? WHERE id_utente = ?");
+            $stmt->bind_param("si", $newFileName, $id_utente);
+            $stmt->execute();
+            $stmt->close();
+            header("Location: " . $_SERVER['REQUEST_URI']);
+            exit;
+
+            echo "<p style='color:green;'>✅ Immagine del profilo aggiornata con successo.</p>";
+        } else {
+            echo "<p style='color:red;'>❌ Errore nel salvataggio del file.</p>";
+        }
+    } else {
+        echo "<p style='color:red;'>⚠️ File non valido. Ammessi: jpg, jpeg, png, gif, webp.</p>";
+    }
+}
+
+
 if ($row['cancellato']) {
     header("Location: login.php?msg=account_disattivato");
     exit;
@@ -764,47 +797,12 @@ echo "<form method='POST' onsubmit=\"return confirm('Sei sicuro di voler disatti
 
 
 } else {
-
-    // blocco else dell'admin/utente
-    $stmt = $conn->prepare("SELECT nome, cognome, email, foto_profilo, data_registrazione FROM utente WHERE id_utente = ?");
-    $stmt->bind_param("i", $id_utente);
-    $stmt->execute();
-    $utente = $stmt->get_result()->fetch_assoc();
-
-    $foto = $utente['foto_profilo'] ? "uploads/" . htmlspecialchars($utente['foto_profilo']) : "uploads/" . ($tipo_utente === 'Medico' ? 'medico.jpg' : 'paziente.jpg');
-    $nome = htmlspecialchars($utente['nome']);
-    $cognome = htmlspecialchars($utente['cognome']);
-    $email = htmlspecialchars($utente['email']);
-    $data_registrazione = htmlspecialchars($utente['data_registrazione']);
-
-
-
-
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['upload_foto']) && isset($_FILES['foto'])) {
-        $file = $_FILES['foto'];
-        $allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-        if ($file['error'] === UPLOAD_ERR_OK && in_array($ext, $allowed)) {
-            $newFileName = 'user_' . $id_utente . '_' . time() . '.' . $ext;
-            $uploadPath = 'uploads/' . $newFileName;
-
-            if (move_uploaded_file($file['tmp_name'], $uploadPath)) {
-                $stmt = $conn->prepare("UPDATE utente SET foto_profilo = ? WHERE id_utente = ?");
-                $stmt->bind_param("si", $newFileName, $id_utente);
-                $stmt->execute();
-
-                echo "<p style='color:green;'>✅ Immagine del profilo aggiornata con successo.</p>";
-                $foto = $uploadPath;
-            } else {
-                echo "<p style='color:red;'>❌ Errore nel salvataggio del file.</p>";
-            }
-        } else {
-            echo "<p style='color:red;'>⚠️ File non valido. Ammessi: jpg, jpeg, png, gif, webp.</p>";
-        }
-    }
-
+    // Utente con tipo non valido: disconnetti e rimanda al login
+    session_destroy();
+    header("Location: login.php?msg=tipo_utente_non_valido");
+    exit;
 }
+
 
     
 
