@@ -2,9 +2,126 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+ob_start(); // deve venire prima di qualsiasi output
 require 'config.php';
 require 'check_accesso.php';
-ob_start();
+
+// HTML iniziale
+echo <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Profilo Utente</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: url('uploads/mirage.jpg') no-repeat center center fixed;
+            background-size: 1600px 700px;
+            color: white;
+        }
+
+        .profile-container {
+            background: rgba(0, 0, 0, 0.7);
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.7);
+        }
+
+        h1, h2, h3 {
+            color: #00bfff;
+            margin-top: 20px;
+        }
+
+        p, li {
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        th, td {
+            border: 1px solid #666;
+            padding: 10px;
+            color: white;
+        }
+
+        th {
+            background-color: rgba(0, 123, 255, 0.3);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.03);
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        button, input[type="submit"], input[type="file"], select {
+            margin-top: 10px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        button, input[type="submit"] {
+            background-color: #00bfff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover, input[type="submit"]:hover {
+            background-color: #009acd;
+        }
+
+        input[type="file"] {
+            background: white;
+            color: black;
+        }
+
+        input[type="number"] {
+            width: 80px;
+            padding: 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        a.button {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #0077cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+        }
+
+        a.button:hover {
+            background-color: #005fa3;
+        }
+    </style>
+</head>
+<body>
+<div class="profile-container">
+HTML;
+
+
+
 // Disattivazione (soft delete) – PRIMA DI QUALSIASI HTML O ECHO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['elimina_account'])) {
     $id_utente = $_SESSION['id_utente']; // Assicurati che venga dalla sessione
@@ -74,7 +191,7 @@ if ($tipo_utente === 'Admin') {
     </ul>";
 
     $v = $conn->query("SELECT COUNT(*) AS visite FROM visita")->fetch_assoc();
-    echo "<p>🗕️ Visite totali (già svolte + in attesa di conferma): <strong>{$v['visite']}</strong></p>";
+    echo "<p>🗕️ Visite totali (già svolte e non): <strong>{$v['visite']}</strong></p>";
 
     $m = $conn->query("SELECT COUNT(*) AS disponibili FROM medico WHERE disponibilita = 1")->fetch_assoc();
     echo "<p>✅ Medici disponibili: <strong>{$m['disponibili']}</strong></p>";
@@ -89,6 +206,45 @@ if ($tipo_utente === 'Admin') {
         echo "<tr><td>" . htmlspecialchars($r['nome']) . ' ' . htmlspecialchars($r['cognome']) . "</td><td>" . htmlspecialchars($r['email']) . "</td><td>" . htmlspecialchars($r['tipo_utente']) . "</td></tr>";
     }
     echo "</table>";
+
+    echo "<hr><h2>🤖 Ultime 10 interazioni Babylon</h2>";
+    $q = "
+            SELECT c.data_avvio, c.data_fine,
+           u.nome AS nome_paziente, u.cognome AS cognome_paziente,
+           cb.sintomi_riportati, cb.specializzazione_dedotta
+            FROM chat c
+            JOIN utente u ON c.id_paziente = u.id_utente
+            JOIN chatbot cb ON cb.id_chatbot = c.id_chatbot
+            ORDER BY c.data_avvio DESC
+            LIMIT 10
+        ";
+
+    $res = $conn->query($q);
+    echo "<table border='1'><tr>
+        <th>🕒 Data Inizio</th>
+        <th>👤 Paziente</th>
+        <th>💬 Sintomi Riportati</th>
+        <th>🧠 Specializzazione Dedotta</th>
+        <th>✅ Completata</th>
+      </tr>";
+
+    while ($row = $res->fetch_assoc()) {
+        $data_avvio = htmlspecialchars($row['data_avvio']);
+        $data_fine = $row['data_fine'] ? '✔️ Sì' : '⏳ No';
+        $paziente = htmlspecialchars($row['nome_paziente'] . ' ' . $row['cognome_paziente']);
+        $sintomi = htmlspecialchars($row['sintomi_riportati']);
+        $spec = htmlspecialchars($row['specializzazione_dedotta']);
+
+    echo "<tr>
+            <td>$data_avvio</td>
+            <td>$paziente</td>
+            <td>$sintomi</td>
+            <td>$spec</td>
+            <td style='text-align:center;'>$data_fine</td>
+          </tr>";
+    }
+    echo "</table>";
+
 
     echo "<hr><h2>📋 Ultime 10 visite</h2>";
     $q = "
@@ -246,8 +402,9 @@ if ($tipo_utente === 'Admin') {
 
 
     // ✅ RICHIESTE da confermare
-    echo "<h2>📝 Richieste da Confermare</h2>";
-    $stmt_richieste = $conn->prepare("
+echo "<h2>📝 Richieste da Confermare</h2>";
+
+$stmt_richieste = $conn->prepare("
     SELECT c.id_chatbot, u.nome, u.cognome, cb.sintomi_riportati
     FROM sceglie s
     JOIN chat c ON s.id_chatbot = c.id_chatbot
@@ -258,33 +415,45 @@ if ($tipo_utente === 'Admin') {
         AND v.stato = 'in_attesa'
         AND v.data_visita IS NULL 
         AND v.esito_visita IS NULL
-    ");
+");
 $stmt_richieste->bind_param("i", $id_utente);
 $stmt_richieste->execute();
 $richieste = $stmt_richieste->get_result();
 
-
-
-    if ($richieste->num_rows > 0) {
-    echo "<table border='1'><tr><th>Paziente</th><th>Sintomi</th><th>Data Visita</th><th>Azioni</th></tr>";
+if ($richieste->num_rows > 0) {
+    echo "<table border='1'>
+            <tr><th>Paziente</th><th>Sintomi</th><th>Data Visita</th><th>Azioni</th></tr>";
+    
     while ($row = $richieste->fetch_assoc()) {
+        $id_chatbot = htmlspecialchars($row['id_chatbot']);
+        $nome = htmlspecialchars($row['nome']);
+        $cognome = htmlspecialchars($row['cognome']);
+        $sintomi = htmlspecialchars($row['sintomi_riportati']);
+
         echo "<tr>
-                <td>" . htmlspecialchars($row['nome']) . " " . htmlspecialchars($row['cognome']) . "</td>
-                <td>" . htmlspecialchars($row['sintomi_riportati']) . "</td>
+                <td>$nome $cognome</td>
+                <td>$sintomi</td>
                 <td>
-                    <form method='POST'>
-                        <input type='hidden' name='chatbot_id' value='{$row['id_chatbot']}'>
-                        <input type='datetime-local' name='data_visita' required>
-                        <button type='submit' name='accetta_visita'>✅ Conferma</button>
+                    <form method='POST' style='margin-bottom: 8px;'>
+                        <input type='hidden' name='chatbot_id' value='$id_chatbot'>
+                        <input type='datetime-local' name='data_visita' class='data-input' required oninput='abilitaConferma(this)'>
+                        <button type='submit' name='accetta_visita' class='btn-conferma' disabled>✅ Conferma</button>
+                    </form>
+                    
+                    <form method='POST' onsubmit=\"return confirm('⚠️ Sei sicuro di voler rifiutare questa richiesta?');\">
+                        <input type='hidden' name='chatbot_id' value='$id_chatbot'>
                         <button type='submit' name='rifiuta_visita' style='background:red; color:white;'>❌ Rifiuta</button>
                     </form>
                 </td>
               </tr>";
     }
+
     echo "</table>";
-    } else {
+} else {
     echo "<p>Nessuna richiesta da confermare.</p>";
-    }
+}
+
+
 
     echo "<h2>🕒 Visite in Attesa di esito</h2>";
 $stmt = $conn->prepare("
@@ -640,122 +809,34 @@ echo "<form method='POST' onsubmit=\"return confirm('Sei sicuro di voler disatti
 
 
 
-ob_end_flush();
+echo '</div>'; // chiusura contenitore visivo
 
+// Script JS
+echo <<<JS
+<script>
+function abilitaConferma(input) {
+    const form = input.closest("form");
+    const button = form.querySelector(".btn-conferma");
+
+    // Valida solo se il campo è pieno E il valore è una data valida
+    if (input.value && !isNaN(new Date(input.value).getTime())) {
+        button.disabled = false;
+    } else {
+        button.disabled = true;
+    }
+}
+</script>
+JS;
+
+// Chiusura HTML
+echo "</body></html>";
+
+ob_end_flush();
 ?>
 
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <title>Profilo Utente</title>
-<style>
-    body {
-        margin: 0;
-        font-family: 'Segoe UI', sans-serif;
-        background: url('uploads/mirage.jpg') no-repeat center center fixed;
-        background-size: 1600px 700px;
-        color: white;
-    }
 
-    .profile-container {
-        background: rgba(0, 0, 0, 0.7);
-        max-width: 1000px;
-        margin: 40px auto;
-        padding: 30px;
-        border-radius: 20px;
-        box-shadow: 0 0 30px rgba(255,255,255,0.7);
-    }
 
-    h1, h2, h3 {
-        color: #00bfff;
-        margin-top: 20px;
-    }
 
-    p, li {
-        font-size: 16px;
-    }
-
-    ul {
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    th, td {
-        border: 1px solid #666;
-        padding: 10px;
-        color: white;
-    }
-
-    th {
-        background-color: rgba(0, 123, 255, 0.3);
-    }
-
-    tr:nth-child(even) {
-        background-color: rgba(255, 255, 255, 0.03);
-    }
-
-    form {
-        margin-top: 20px;
-    }
-
-    button, input[type="submit"], input[type="file"], select {
-        margin-top: 10px;
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: none;
-        font-size: 14px;
-    }
-
-    button, input[type="submit"] {
-        background-color: #00bfff;
-        color: white;
-        cursor: pointer;
-    }
-
-    button:hover, input[type="submit"]:hover {
-        background-color: #009acd;
-    }
-
-    input[type="file"] {
-        background: white;
-        color: black;
-    }
-
-    input[type="number"] {
-        width: 80px;
-        padding: 6px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
-
-    a.button {
-        display: inline-block;
-        margin-top: 20px;
-        padding: 10px 20px;
-        background: #0077cc;
-        color: white;
-        text-decoration: none;
-        border-radius: 8px;
-    }
-
-    a.button:hover {
-        background-color: #005fa3;
-    }
-</style>
-</head>
-
-<script>
-    // Avvolge tutto il contenuto esistente in un container centrale
-    document.body.innerHTML = '<div class="profile-container">' + document.body.innerHTML + '</div>';
-</script>
 
 
 

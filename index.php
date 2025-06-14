@@ -113,8 +113,6 @@ session_start();
 
             <?php if ($_SESSION['tipo_utente'] === 'Admin'): ?>
                 <li><a href="lista_utenti.php">📄 Lista Utenti Registrati</a></li>
-                <li><a href="popola_db.php">🧪 Rigenera dati demo</a></li>
-                <li><a href="simula_visite.php">📅 Simula Visite</a></li>
                 <li><a href="tutte_visite.php">📋 Tutte le Visite</a></li>
                 <li><a href="azzera_database.php" onclick="return confirm('Sei sicuro di voler azzerare tutto il database?')">🗑️ Azzera Database</a></li>
             <?php endif; ?>
