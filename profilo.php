@@ -209,7 +209,7 @@ if ($tipo_utente === 'Admin') {
 
     echo "<hr><h2>🤖 Ultime 10 interazioni Babylon</h2>";
     $q = "
-            SELECT c.data_avvio, c.data_fine,
+            SELECT c.data_avvio,
            u.nome AS nome_paziente, u.cognome AS cognome_paziente,
            cb.sintomi_riportati, cb.specializzazione_dedotta
             FROM chat c
@@ -225,12 +225,12 @@ if ($tipo_utente === 'Admin') {
         <th>👤 Paziente</th>
         <th>💬 Sintomi Riportati</th>
         <th>🧠 Specializzazione Dedotta</th>
-        <th>✅ Completata</th>
+        
       </tr>";
 
     while ($row = $res->fetch_assoc()) {
         $data_avvio = htmlspecialchars($row['data_avvio']);
-        $data_fine = $row['data_fine'] ? '✔️ Sì' : '⏳ No';
+        
         $paziente = htmlspecialchars($row['nome_paziente'] . ' ' . $row['cognome_paziente']);
         $sintomi = htmlspecialchars($row['sintomi_riportati']);
         $spec = htmlspecialchars($row['specializzazione_dedotta']);
@@ -240,7 +240,7 @@ if ($tipo_utente === 'Admin') {
             <td>$paziente</td>
             <td>$sintomi</td>
             <td>$spec</td>
-            <td style='text-align:center;'>$data_fine</td>
+            
           </tr>";
     }
     echo "</table>";
@@ -248,7 +248,7 @@ if ($tipo_utente === 'Admin') {
 
     echo "<hr><h2>📋 Ultime 10 visite</h2>";
     $q = "
-        SELECT v.data_visita, v.esito_visita,
+        SELECT v.data_visita, v.esito_visita, v.stato,
                pz.nome AS nome_paziente, pz.cognome AS cognome_paziente,
                m.nome AS nome_medico, m.cognome AS cognome_medico
         FROM visita v
@@ -258,13 +258,14 @@ if ($tipo_utente === 'Admin') {
         LIMIT 10
     ";
     $res = $conn->query($q);
-    echo "<table border='1'><tr><th>Data</th><th>Paziente</th><th>Medico</th><th>Esito</th></tr>";
+    echo "<table border='1'><tr><th>Data</th><th>Paziente</th><th>Medico</th><th>Esito</th><th>Stato</th></th>";
     while ($v = $res->fetch_assoc()) {
         echo "<tr>
                 <td>" . htmlspecialchars($v['data_visita']) . "</td>
                 <td>" . htmlspecialchars($v['nome_paziente'] . ' ' . $v['cognome_paziente']) . "</td>
                 <td>" . htmlspecialchars($v['nome_medico'] . ' ' . $v['cognome_medico']) . "</td>
                 <td>" . htmlspecialchars($v['esito_visita']) . "</td>
+                <td>" . htmlspecialchars(ucfirst($v['stato'])) . "</td>
               </tr>";
     }
     echo "</table>";
@@ -352,7 +353,7 @@ if ($tipo_utente === 'Admin') {
     // Rifiuta visita
     if (isset($_POST['rifiuta_visita'])) {
         $chatbot_id = (int)$_POST['chatbot_id'];
-        $stmt = $conn->prepare("UPDATE visita SET stato = 'rifiutata' WHERE id_chatbot = ? AND id_medico = ?");
+        $stmt = $conn->prepare("UPDATE visita SET stato = 'annullata' WHERE id_chatbot = ? AND id_medico = ?");
         $stmt->bind_param("ii", $chatbot_id, $id_utente);
         $stmt->execute();
         header("Location: profilo.php");
@@ -657,7 +658,7 @@ if ($attesa->num_rows > 0) {
 
     echo "<h2>📅 Storico Visite</h2>";
         $query = "
-            SELECT v.data_visita, v.esito_visita, v.rating, m.Specializzazione, u.nome AS nome_medico, u.cognome AS cognome_medico, v.id_visita
+            SELECT v.data_visita, v.esito_visita, v.rating, v.stato, m.Specializzazione, u.nome AS nome_medico, u.cognome AS cognome_medico, v.id_visita
             FROM visita v
             JOIN medico m ON v.id_medico = m.id_medico
             JOIN utente u ON m.id_medico = u.id_utente
@@ -671,14 +672,16 @@ if ($attesa->num_rows > 0) {
 
         if ($result->num_rows > 0) {
     echo "<table border='1'>
-            <tr><th>Data Visita</th><th>Medico</th><th>Specializzazione</th><th>Esito</th></tr>";
+            <tr><th>Data Visita</th><th>Medico</th><th>Specializzazione</th><th>Esito</th><th>Stato</th>";
     while ($v = $result->fetch_assoc()) {
         $nome_medico = htmlspecialchars($v['nome_medico']) . ' ' . htmlspecialchars($v['cognome_medico']);
+        $stato = htmlspecialchars($v['stato']);
         echo "<tr>
                 <td>" . htmlspecialchars($v['data_visita']) . "</td>
                 <td>$nome_medico</td>
                 <td>" . htmlspecialchars($v['Specializzazione']) . "</td>
                 <td>" . htmlspecialchars($v['esito_visita']) . "</td>
+                <td>$stato</td>
               </tr>";
 
         if ($v['esito_visita'] && is_null($v['rating'])) {
