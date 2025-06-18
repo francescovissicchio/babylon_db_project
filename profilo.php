@@ -317,6 +317,8 @@ if ($tipo_utente === 'Admin') {
         <input type='file' name='foto' accept='image/*' required>
         <button type='submit' name='upload_foto'>📤 Cambia Foto</button>
       </form>";
+
+    echo "<h2>Dati Medico</h2>";
     echo "<p>Email: $email</p>";
     echo "<p>🗓️ Registrato il: $data_registrazione</p>";
 
@@ -405,6 +407,7 @@ if ($tipo_utente === 'Admin') {
     $rating = number_format((float)$medico['rating'], 1);
     $disponibilita = (int)$medico['disponibilita'];
     $stato = $disponibilita ? '🟢 Disponibile' : '🔴 Non disponibile';
+
 
     echo "<p>Specializzazione: $specializzazione</p>
       <p>Rating: $rating</p>

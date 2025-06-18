@@ -70,7 +70,7 @@ session_start();
         a {
             text-decoration: none;
             color: #ffffff;
-            background-color: #4facfe;
+            background-color: #333333;
             display: inline-block;
             padding: 10px 20px;
             border-radius: 8px;
@@ -91,6 +91,12 @@ session_start();
 
 <div class="box">
     <h1>🩺 Homepage Babylon</h1>
+        <?php if (!isset($_SESSION['id_utente'])): ?>
+    <h3>
+        Prenota la visita giusta, con il medico giusto.
+        Un chatbot intelligente ti guida subito allo specialista più adatto!
+    </h3>
+    <?php endif; ?>
 
     <?php if (isset($_SESSION['nome'])): ?>
         <div class="welcome">

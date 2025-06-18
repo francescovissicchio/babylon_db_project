@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     h2 {
-      color: #0077cc;
+      color: #333333;
       text-align: center;
       margin-bottom: 20px;
     }
@@ -136,14 +136,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     button {
       margin-top: 25px;
-      background-color: #0077cc; color: white;
+      background-color: #333333; color: white;
       border: none; padding: 12px 20px;
       border-radius: 8px;
       cursor: pointer; width: 100%;
       font-size: 16px; font-weight: 600;
       transition: background-color 0.3s ease;
     }
-    button:hover { background-color: #005fa3; }
+    button:hover { background-color: #333333; }
     .message {
       margin-top: 15px;
       font-weight: bold;
@@ -157,7 +157,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       display: block;
       margin-top: 20px;
       text-align: center;
-      color: #0077cc;
+      color: #333333;
       font-weight: 600;
       text-decoration: none;
     }
@@ -183,6 +183,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     border: 1px solid green;
     color: green;
     }
+    .home-link {
+    display: block;
+    margin-top: 25px;
+    text-align: center;
+    font-weight: 600;
+    color: #333333;
+    text-decoration: none;
+    padding: 10px 0;
+    border-radius: 8px;
+    transition: color 0.3s ease;
+  }
+
+  .home-link:hover {
+    color: #333333;
+  }
+
 
     .radio-group input[type="radio"] { display: none; }
     .radio-group label {
@@ -192,11 +208,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       cursor: pointer;
       font-weight: 600;
       background-color: #f0f8ff;
-      color: #0077cc;
+      color: #333333;
       transition: all 0.3s ease;
     }
     .radio-group input[type="radio"]:checked + label {
-      background-color: #0077cc;
+      background-color: #333333;
       color: white;
     }
     .hidden { display: none; }
@@ -303,6 +319,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Registrati</button>
       </form>
     <?php endif; ?>
+    <a href="index.php" class="home-link">🏠 Torna alla Home</a>
+
   </div>
 </body>
 </html>

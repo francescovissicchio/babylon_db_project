@@ -40,7 +40,7 @@ session_destroy();
             display: inline-block;
             margin-top: 20px;
             padding: 12px 24px;
-            background-color: #0077cc;
+            background-color: #333333;
             color: #fff;
             text-decoration: none;
             border-radius: 8px;

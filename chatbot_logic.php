@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
 
         .bot-box {
             background-color: rgba(255, 255, 255, 0.1);
-            border-left: 5px solid #00bfff;
+            border-left: 5px solid #333333;
             padding: 15px;
             margin-bottom: 20px;
             border-radius: 10px;
@@ -160,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
         }
 
         .progress .active {
-            border-color: #00bfff;
+            border-color: #333333;
             font-weight: bold;
             color: #fff;
         }
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
         }
 
         button {
-            background-color: #00bfff;
+            background-color: #333333;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -203,21 +203,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
         }
 
         button:hover {
-            background-color: #009acd;
+            background-color: #333333;
         }
 
         a.button {
             display: inline-block;
             margin: 10px 5px;
             padding: 10px 20px;
-            background: #28a745;
-            color: white;
+            background: #f0f0f0;
+            color: black;
             text-decoration: none;
             border-radius: 8px;
         }
 
         a.button.secondary {
-            background: #0077cc;
+            background: #333333;
         }
 
         a.button:hover {
@@ -278,11 +278,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['id_medico']) && isset
     </div>
 <?php endif; ?>
 
-<a href="profilo.php" style="display:inline-block; margin-top: 10px; padding: 10px 20px; background:#28a745; color:white; text-decoration:none; border-radius:8px;">
+<a href="profilo.php" style="display:inline-block; margin-top: 10px; padding: 10px 20px; background:#f0f0f0; color:black; text-decoration:none; border-radius:8px;">
 👤 Torna al Profilo
 </a>
 
-<a href="index.php" style="display:inline-block; margin-top: 30px; padding: 10px 20px; background:#0077cc; color:white; text-decoration:none; border-radius:8px;">
+<a href="index.php" style="display:inline-block; margin-top: 30px; padding: 10px 20px; background:#333333; color:white; text-decoration:none; border-radius:8px;">
 🏠 Torna alla Home
 </a>
 </body>
